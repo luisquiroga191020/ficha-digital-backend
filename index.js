@@ -130,14 +130,16 @@ app.delete('/api/users/:id', authenticateToken, authorize(['ADMINISTRADOR']), as
 
 // --- GESTIÓN DE AFILIACIONES ---
 app.post('/api/submit-ficha', authenticateToken, authorize(['VENDEDOR', 'SUPERVISOR', 'ADMINISTRADOR']), async (req, res) => {
-  const formData = req.body;
+  // Ahora extraemos latitud y longitud del cuerpo de la petición
+  const { formData, latitud, longitud } = req.body; 
   const userId = req.user.userId;
   const titular_nombre = `${formData.apellidoTitular || ''}, ${formData.nombreTitular || ''}`;
   
   try {
+    // Actualizamos la consulta INSERT para incluir los nuevos campos
     await pool.query(
-      'INSERT INTO affiliations (user_id, form_data, titular_nombre, titular_dni, plan) VALUES ($1, $2, $3, $4, $5)',
-      [userId, formData, titular_nombre, formData.dniTitular, formData.plan]
+      'INSERT INTO affiliations (user_id, form_data, titular_nombre, titular_dni, plan, latitud, longitud) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+      [userId, formData, titular_nombre, formData.dniTitular, formData.plan, latitud, longitud]
     );
     res.status(201).json({ message: 'Ficha guardada correctamente.' });
   } catch (error) {
