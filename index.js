@@ -1,4 +1,4 @@
-// index.js (Versión completa con gestión de usuarios y roles)
+// index.js (Versión final y corregida)
 
 // 1. IMPORTAR LIBRERÍAS
 require('dotenv').config();
@@ -49,11 +49,8 @@ const authorize = (allowedRoles) => {
 };
 
 // 5. RUTAS (ENDPOINTS) DE LA API
-// -----------------------------------------------------------------------------
-
 // --- Autenticación ---
 app.post('/api/login', async (req, res) => {
-  // ... (sin cambios)
   const { email, password } = req.body;
   if (!email || !password) { return res.status(400).json({ message: 'El correo y la contraseña son obligatorios.' }); }
   try {
@@ -95,7 +92,7 @@ app.post('/api/users', authenticateToken, authorize(['ADMINISTRADOR']), async (r
     );
     res.status(201).json(newUser.rows[0]);
   } catch (error) {
-    if (error.code === '23505') { // Error de 'unique constraint'
+    if (error.code === '23505') {
         return res.status(409).json({ message: 'El correo electrónico o el código ya existen.' });
     }
     res.status(500).json({ message: 'Error al crear el usuario.' });
@@ -121,7 +118,7 @@ app.delete('/api/users/:id', authenticateToken, authorize(['ADMINISTRADOR']), as
     const { id } = req.params;
     try {
         await pool.query('DELETE FROM users WHERE id = $1', [id]);
-        res.status(204).send(); // 204 No Content
+        res.status(204).send();
     } catch (error) { res.status(500).json({ message: 'Error al eliminar el usuario.' }); }
 });
 
@@ -168,9 +165,29 @@ app.get('/api/affiliations', authenticateToken, async (req, res) => {
     }
 });
 
+// --- ***** CÓDIGO CORREGIDO AQUÍ ***** ---
 // --- Datos para Selectores (Planes y Empresas) ---
-app.get('/api/planes', authenticateToken, async (req, res) => { /* ... sin cambios ... */ });
-app.get('/api/empresas', authenticateToken, async (req, res) => { /* ... sin cambios ... */ });
+app.get('/api/planes', authenticateToken, async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM planes ORDER BY label');
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error al obtener planes:', error);
+        res.status(500).json({ message: 'Error interno del servidor.' });
+    }
+});
+
+app.get('/api/empresas', authenticateToken, async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM empresas ORDER BY label');
+        res.json(result.rows);
+    } catch (error) {
+        console.error('Error al obtener empresas:', error);
+        res.status(500).json({ message: 'Error interno del servidor.' });
+    }
+});
+// --- ***** FIN DE LA CORRECCIÓN ***** ---
+
 
 // 6. INICIAR EL SERVIDOR
 app.listen(PORT, () => {
