@@ -1,6 +1,7 @@
-// index.js (Versión final y corregida)
+// index.js (Versión completa con detalle de afiliación)
 
 // 1. IMPORTAR LIBRERÍAS
+// -----------------------------------------------------------------------------
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
@@ -9,6 +10,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 // 2. CONFIGURACIÓN INICIAL
+// -----------------------------------------------------------------------------
 const app = express();
 const PORT = process.env.PORT || 3001;
 const pool = new Pool({
@@ -17,6 +19,7 @@ const pool = new Pool({
 });
 
 // 3. MIDDLEWARES
+// -----------------------------------------------------------------------------
 const corsOptions = {
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
@@ -26,6 +29,7 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: '5mb' }));
 
 // 4. LÓGICA DE AUTENTICACIÓN Y AUTORIZACIÓN
+// -----------------------------------------------------------------------------
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
@@ -49,6 +53,8 @@ const authorize = (allowedRoles) => {
 };
 
 // 5. RUTAS (ENDPOINTS) DE LA API
+// -----------------------------------------------------------------------------
+
 // --- Autenticación ---
 app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
@@ -165,14 +171,44 @@ app.get('/api/affiliations', authenticateToken, async (req, res) => {
     }
 });
 
-// --- ***** CÓDIGO CORREGIDO AQUÍ ***** ---
+// NUEVO ENDPOINT PARA OBTENER DETALLES DE UNA AFILIACIÓN
+app.get('/api/affiliations/:id', authenticateToken, async (req, res) => {
+    const { id } = req.params;
+    const { userId, role } = req.user;
+
+    try {
+        let query = 'SELECT form_data FROM affiliations WHERE id = $1';
+        const params = [id];
+
+        // Medida de seguridad: Si el usuario es un VENDEDOR, solo puede
+        // ver los detalles de una afiliación que él mismo creó.
+        if (role === 'VENDEDOR') {
+            query += ' AND user_id = $2';
+            params.push(userId);
+        }
+
+        const result = await pool.query(query, params);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Afiliación no encontrada o no tienes permiso para verla.' });
+        }
+
+        // Devolvemos solo el objeto form_data, que es lo que el resumen necesita
+        res.json(result.rows[0].form_data);
+
+    } catch (error) {
+        console.error('Error al obtener detalle de la afiliación:', error);
+        res.status(500).json({ message: 'Error interno del servidor.' });
+    }
+});
+
+
 // --- Datos para Selectores (Planes y Empresas) ---
 app.get('/api/planes', authenticateToken, async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM planes ORDER BY label');
         res.json(result.rows);
     } catch (error) {
-        console.error('Error al obtener planes:', error);
         res.status(500).json({ message: 'Error interno del servidor.' });
     }
 });
@@ -182,12 +218,9 @@ app.get('/api/empresas', authenticateToken, async (req, res) => {
         const result = await pool.query('SELECT * FROM empresas ORDER BY label');
         res.json(result.rows);
     } catch (error) {
-        console.error('Error al obtener empresas:', error);
         res.status(500).json({ message: 'Error interno del servidor.' });
     }
 });
-// --- ***** FIN DE LA CORRECCIÓN ***** ---
-
 
 // 6. INICIAR EL SERVIDOR
 app.listen(PORT, () => {
