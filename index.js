@@ -1,4 +1,4 @@
-// index.js (Versión completa con detalle de afiliación)
+// index.js (Versión completa con flujo de estados de afiliación)
 
 // 1. IMPORTAR LIBRERÍAS
 // -----------------------------------------------------------------------------
@@ -195,7 +195,6 @@ app.post(
   authenticateToken,
   authorize(["VENDEDOR", "SUPERVISOR", "ADMINISTRADOR"]),
   async (req, res) => {
-    // Ahora extraemos latitud y longitud del cuerpo de la petición
     const { formData, latitud, longitud } = req.body;
     const userId = req.user.userId;
     const titular_nombre = `${formData.apellidoTitular || ""}, ${
@@ -203,7 +202,7 @@ app.post(
     }`;
 
     try {
-      // Actualizamos la consulta INSERT para incluir los nuevos campos
+      // No se necesita cambiar, la DB asigna el status 'Presentado' por defecto
       await pool.query(
         "INSERT INTO affiliations (user_id, form_data, titular_nombre, titular_dni, plan, latitud, longitud) VALUES ($1, $2, $3, $4, $5, $6, $7)",
         [
@@ -227,18 +226,20 @@ app.post(
 app.get("/api/affiliations", authenticateToken, async (req, res) => {
   const { userId, role } = req.user;
   try {
+    // MODIFICADO: Se añade a.status a la selección
     let query = `
-    SELECT
-      a.id,
-      a.titular_nombre,
-      a.titular_dni,
-      a.plan,
-      a.form_data ->> 'total' as total, -- <-- LÍNEA AÑADIDA
-      u.full_name as vendor_name,
-      a.fecha_creacion
-    FROM affiliations a
-    JOIN users u ON a.user_id = u.id
-`;
+      SELECT
+        a.id,
+        a.titular_nombre,
+        a.titular_dni,
+        a.plan,
+        a.form_data ->> 'total' as total,
+        u.full_name as vendor_name,
+        a.fecha_creacion,
+        a.status
+      FROM affiliations a
+      JOIN users u ON a.user_id = u.id
+    `;
     const params = [];
 
     if (role === "VENDEDOR") {
@@ -256,17 +257,13 @@ app.get("/api/affiliations", authenticateToken, async (req, res) => {
   }
 });
 
-// NUEVO ENDPOINT PARA OBTENER DETALLES DE UNA AFILIACIÓN
 app.get("/api/affiliations/:id", authenticateToken, async (req, res) => {
   const { id } = req.params;
   const { userId, role } = req.user;
-
   try {
-    // CORRECCIÓN 1: Seleccionamos todos los campos, no solo form_data.
     let query = "SELECT * FROM affiliations WHERE id = $1";
     const params = [id];
 
-    // La lógica de seguridad para VENDEDOR se mantiene igual
     if (role === "VENDEDOR") {
       query += " AND user_id = $2";
       params.push(userId);
@@ -282,12 +279,12 @@ app.get("/api/affiliations/:id", authenticateToken, async (req, res) => {
         });
     }
 
-    // CORRECCIÓN 2: Combinamos el objeto form_data con los campos principales
-    // de la tabla (latitud y longitud) en un solo objeto de respuesta.
+    // MODIFICADO: La respuesta ahora incluye el status
     const affiliationDetails = {
-      ...result.rows[0].form_data, // Expandimos todo el JSON de la ficha
-      latitud: result.rows[0].latitud, // Añadimos explícitamente la latitud
-      longitud: result.rows[0].longitud, // y la longitud
+      ...result.rows[0].form_data,
+      latitud: result.rows[0].latitud,
+      longitud: result.rows[0].longitud,
+      status: result.rows[0].status,
     };
 
     res.json(affiliationDetails);
@@ -295,6 +292,36 @@ app.get("/api/affiliations/:id", authenticateToken, async (req, res) => {
     console.error("Error al obtener detalle de la afiliación:", error);
     res.status(500).json({ message: "Error interno del servidor." });
   }
+});
+
+// NUEVO: ENDPOINT PARA ACTUALIZAR EL ESTADO DE UNA AFILIACIÓN
+app.put('/api/affiliations/:id/status', authenticateToken, authorize(['SUPERVISOR', 'ADMINISTRADOR']), async (req, res) => {
+    const { id } = req.params;
+    const { newStatus } = req.body;
+
+    if (!['Aprobado', 'Rechazado'].includes(newStatus)) {
+        return res.status(400).json({ message: 'Estado no válido.' });
+    }
+
+    try {
+        const current = await pool.query('SELECT status FROM affiliations WHERE id = $1', [id]);
+        if (current.rows.length === 0) {
+            return res.status(404).json({ message: 'Afiliación no encontrada.' });
+        }
+        if (current.rows[0].status !== 'Presentado') {
+            return res.status(409).json({ message: `Esta afiliación ya está en estado '${current.rows[0].status}' y no se puede cambiar.` });
+        }
+
+        const result = await pool.query(
+            'UPDATE affiliations SET status = $1 WHERE id = $2 RETURNING status',
+            [newStatus, id]
+        );
+        res.json({ newStatus: result.rows[0].status });
+
+    } catch (error) {
+        console.error('Error al actualizar estado:', error);
+        res.status(500).json({ message: 'Error interno del servidor.' });
+    }
 });
 
 // --- Datos para Selectores (Planes y Empresas) ---
