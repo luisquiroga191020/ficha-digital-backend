@@ -179,11 +179,11 @@ app.get('/api/affiliations/:id', authenticateToken, async (req, res) => {
     const { userId, role } = req.user;
 
     try {
-        let query = 'SELECT form_data FROM affiliations WHERE id = $1';
+        // CORRECCIÓN 1: Seleccionamos todos los campos, no solo form_data.
+        let query = 'SELECT * FROM affiliations WHERE id = $1';
         const params = [id];
 
-        // Medida de seguridad: Si el usuario es un VENDEDOR, solo puede
-        // ver los detalles de una afiliación que él mismo creó.
+        // La lógica de seguridad para VENDEDOR se mantiene igual
         if (role === 'VENDEDOR') {
             query += ' AND user_id = $2';
             params.push(userId);
@@ -195,8 +195,15 @@ app.get('/api/affiliations/:id', authenticateToken, async (req, res) => {
             return res.status(404).json({ message: 'Afiliación no encontrada o no tienes permiso para verla.' });
         }
 
-        // Devolvemos solo el objeto form_data, que es lo que el resumen necesita
-        res.json(result.rows[0].form_data);
+        // CORRECCIÓN 2: Combinamos el objeto form_data con los campos principales
+        // de la tabla (latitud y longitud) en un solo objeto de respuesta.
+        const affiliationDetails = {
+            ...result.rows[0].form_data, // Expandimos todo el JSON de la ficha
+            latitud: result.rows[0].latitud,   // Añadimos explícitamente la latitud
+            longitud: result.rows[0].longitud, // y la longitud
+        };
+
+        res.json(affiliationDetails);
 
     } catch (error) {
         console.error('Error al obtener detalle de la afiliación:', error);
