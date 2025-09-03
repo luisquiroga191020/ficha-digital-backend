@@ -279,13 +279,13 @@ app.get("/api/affiliations/:id", authenticateToken, async (req, res) => {
         });
     }
 
-    // MODIFICADO: La respuesta ahora incluye el status
     const affiliationDetails = {
-      ...result.rows[0].form_data,
-      latitud: result.rows[0].latitud,
-      longitud: result.rows[0].longitud,
-      status: result.rows[0].status,
-    };
+    ...result.rows[0].form_data,
+    id: result.rows[0].id, 
+    latitud: result.rows[0].latitud,
+    longitud: result.rows[0].longitud,
+    status: result.rows[0].status,
+};
 
     res.json(affiliationDetails);
   } catch (error) {
