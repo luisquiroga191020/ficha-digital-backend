@@ -47,11 +47,9 @@ const authorize = (allowedRoles) => {
     if (allowedRoles.includes(userRole)) {
       next();
     } else {
-      res
-        .status(403)
-        .json({
-          message: "Acceso denegado: no tienes los permisos necesarios.",
-        });
+      res.status(403).json({
+        message: "Acceso denegado: no tienes los permisos necesarios.",
+      });
     }
   };
 };
@@ -260,12 +258,19 @@ app.get("/api/affiliations", authenticateToken, async (req, res) => {
 app.get("/api/affiliations/:id", authenticateToken, async (req, res) => {
   const { id } = req.params;
   const { userId, role } = req.user;
+
   try {
-    let query = "SELECT * FROM affiliations WHERE id = $1";
+    // Unimos la tabla de afiliaciones con la de usuarios para obtener el nombre de quien cambió el estado
+    let query = `
+            SELECT a.*, u.full_name as status_change_user_name 
+            FROM affiliations a
+            LEFT JOIN users u ON a.status_change_user_id = u.id
+            WHERE a.id = $1
+        `;
     const params = [id];
 
     if (role === "VENDEDOR") {
-      query += " AND user_id = $2";
+      query += " AND a.user_id = $2";
       params.push(userId);
     }
 
@@ -274,55 +279,93 @@ app.get("/api/affiliations/:id", authenticateToken, async (req, res) => {
     if (result.rows.length === 0) {
       return res
         .status(404)
-        .json({
-          message: "Afiliación no encontrada o no tienes permiso para verla.",
-        });
+        .json({ message: "Afiliación no encontrada o sin permiso." });
     }
 
     const affiliationDetails = {
-    ...result.rows[0].form_data,
-    id: result.rows[0].id, 
-    latitud: result.rows[0].latitud,
-    longitud: result.rows[0].longitud,
-    status: result.rows[0].status,
-};
+      ...result.rows[0].form_data,
+      id: result.rows[0].id,
+      latitud: result.rows[0].latitud,
+      longitud: result.rows[0].longitud,
+      status: result.rows[0].status,
+      // Añadimos los nuevos campos a la respuesta
+      statusChangeTimestamp: result.rows[0].status_change_timestamp,
+      statusChangeUserName: result.rows[0].status_change_user_name,
+      rechazoMotivo: result.rows[0].rechazo_motivo,
+    };
 
     res.json(affiliationDetails);
   } catch (error) {
-    console.error("Error al obtener detalle de la afiliación:", error);
+    console.error("Error al obtener detalle:", error);
     res.status(500).json({ message: "Error interno del servidor." });
   }
 });
 
-// NUEVO: ENDPOINT PARA ACTUALIZAR EL ESTADO DE UNA AFILIACIÓN
-app.put('/api/affiliations/:id/status', authenticateToken, authorize(['SUPERVISOR', 'ADMINISTRADOR']), async (req, res) => {
-    const { id } = req.params;
-    const { newStatus } = req.body;
+// Dentro de 5. RUTAS (ENDPOINTS) DE LA API
 
-    if (!['Aprobado', 'Rechazado'].includes(newStatus)) {
-        return res.status(400).json({ message: 'Estado no válido.' });
+app.put(
+  "/api/affiliations/:id/status",
+  authenticateToken,
+  authorize(["SUPERVISOR", "ADMINISTRADOR"]),
+  async (req, res) => {
+    const { id } = req.params;
+    const { newStatus, motivo } = req.body; // Aceptamos el nuevo campo 'motivo'
+    const changingUserId = req.user.userId; // Obtenemos el ID del usuario que realiza la acción
+
+    if (!["Aprobado", "Rechazado"].includes(newStatus)) {
+      return res.status(400).json({ message: "Estado no válido." });
+    }
+    // Si el estado es 'Rechazado', el motivo es obligatorio
+    if (newStatus === "Rechazado" && (!motivo || motivo.trim() === "")) {
+      return res
+        .status(400)
+        .json({ message: "El motivo del rechazo es obligatorio." });
     }
 
     try {
-        const current = await pool.query('SELECT status FROM affiliations WHERE id = $1', [id]);
-        if (current.rows.length === 0) {
-            return res.status(404).json({ message: 'Afiliación no encontrada.' });
-        }
-        if (current.rows[0].status !== 'Presentado') {
-            return res.status(409).json({ message: `Esta afiliación ya está en estado '${current.rows[0].status}' y no se puede cambiar.` });
-        }
+      const current = await pool.query(
+        "SELECT status FROM affiliations WHERE id = $1",
+        [id]
+      );
+      if (current.rows.length === 0) {
+        return res.status(404).json({ message: "Afiliación no encontrada." });
+      }
+      if (current.rows[0].status !== "Presentado") {
+        return res
+          .status(409)
+          .json({
+            message: `Esta afiliación ya está en estado '${current.rows[0].status}' y no se puede cambiar.`,
+          });
+      }
 
-        const result = await pool.query(
-            'UPDATE affiliations SET status = $1 WHERE id = $2 RETURNING status',
-            [newStatus, id]
-        );
-        res.json({ newStatus: result.rows[0].status });
+      // Actualizamos la tabla con todos los nuevos datos
+      const result = await pool.query(
+        `UPDATE affiliations 
+             SET status = $1, 
+                 status_change_user_id = $2, 
+                 status_change_timestamp = NOW(), 
+                 rechazo_motivo = $3 
+             WHERE id = $4 
+             RETURNING status, status_change_timestamp, rechazo_motivo`,
+        [
+          newStatus,
+          changingUserId,
+          newStatus === "Rechazado" ? motivo : null,
+          id,
+        ]
+      );
 
+      res.json({
+        newStatus: result.rows[0].status,
+        timestamp: result.rows[0].status_change_timestamp,
+        motivo: result.rows[0].rechazo_motivo,
+      });
     } catch (error) {
-        console.error('Error al actualizar estado:', error);
-        res.status(500).json({ message: 'Error interno del servidor.' });
+      console.error("Error al actualizar estado:", error);
+      res.status(500).json({ message: "Error interno del servidor." });
     }
-});
+  }
+);
 
 // --- Datos para Selectores (Planes y Empresas) ---
 app.get("/api/planes", authenticateToken, async (req, res) => {
