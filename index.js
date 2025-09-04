@@ -353,14 +353,14 @@ app.put(
 );
 
 // ENDPOINT PARA LOS DATOS DEL DASHBOARD
+// Dentro de 5. RUTAS (ENDPOINTS) DE LA API
+
 app.post(
   "/api/dashboard",
   authenticateToken,
   authorize(["SUPERVISOR", "GERENTE", "ADMINISTRADOR"]),
   async (req, res) => {
     const { startDate, endDate } = req.body;
-
-    // Validación de fechas
     if (!startDate || !endDate) {
       return res
         .status(400)
@@ -368,21 +368,23 @@ app.post(
     }
 
     try {
-      // Consulta principal para obtener los datos de las afiliaciones en el rango de fechas
+      // Ajustamos la fecha final para que incluya todo el día
+      const finalEndDate = new Date(endDate);
+      finalEndDate.setDate(finalEndDate.getDate() + 1);
+
       const affiliationsQuery = `
             SELECT 
-                a.status,
-                a.latitud,
-                a.longitud,
+                a.status, a.latitud, a.longitud, a.fecha_creacion,
                 a.form_data ->> 'total' as total,
+                a.form_data ->> 'plan' as plan,
                 u.full_name as vendor_name
             FROM affiliations a
             JOIN users u ON a.user_id = u.id
-            WHERE a.fecha_creacion BETWEEN $1 AND $2
+            WHERE a.fecha_creacion >= $1 AND a.fecha_creacion < $2
         `;
       const affiliationsResult = await pool.query(affiliationsQuery, [
         startDate,
-        endDate,
+        finalEndDate,
       ]);
       const affiliations = affiliationsResult.rows;
 
@@ -394,28 +396,40 @@ app.post(
       const fichasRechazadas = affiliations.filter(
         (f) => f.status === "Rechazado"
       ).length;
-      const fichasPendientes = affiliations.filter(
-        (f) => f.status === "Presentado"
-      ).length;
+      const fichasPendientes = totalFichas - fichasAprobadas - fichasRechazadas;
 
       const ventasTotales = affiliations
         .filter((f) => f.status === "Aprobado" && f.total)
         .reduce((sum, f) => sum + parseFloat(f.total), 0);
 
-      // Contar ventas por vendedor
       const ventasPorVendedor = affiliations.reduce((acc, f) => {
         if (f.status === "Aprobado") {
           acc[f.vendor_name] = (acc[f.vendor_name] || 0) + 1;
         }
         return acc;
       }, {});
-
-      // Encontrar el vendedor con más ventas
       const [topVendedor, topVendedorVentas] = Object.entries(
         ventasPorVendedor
       ).sort(([, a], [, b]) => b - a)[0] || ["N/A", 0];
 
-      // Extraer solo las ubicaciones para el mapa
+      const planesVendidos = affiliations.reduce((acc, f) => {
+        if (f.status === "Aprobado" && f.plan) {
+          acc[f.plan] = (acc[f.plan] || 0) + 1;
+        }
+        return acc;
+      }, {});
+      const [topPlan, topPlanVentas] = Object.entries(planesVendidos).sort(
+        ([, a], [, b]) => b - a
+      )[0] || ["N/A", 0];
+
+      const ventasPorDia = affiliations.reduce((acc, f) => {
+        if (f.status === "Aprobado") {
+          const dia = new Date(f.fecha_creacion).toISOString().split("T")[0];
+          acc[dia] = (acc[dia] || 0) + 1;
+        }
+        return acc;
+      }, {});
+
       const locations = affiliations
         .filter((f) => f.latitud && f.longitud)
         .map((f) => ({
@@ -435,12 +449,14 @@ app.post(
             totalFichas > 0
               ? ((fichasAprobadas / totalFichas) * 100).toFixed(1) + "%"
               : "0%",
-          ventasTotales: ventasTotales.toLocaleString("es-AR", {
-            style: "currency",
-            currency: "ARS",
-          }),
+          ventasTotales: ventasTotales,
+          ticketPromedio:
+            fichasAprobadas > 0 ? ventasTotales / fichasAprobadas : 0,
           topVendedor: topVendedor,
           topVendedorVentas,
+          topPlan,
+          topPlanVentas,
+          ventasPorDia, // Datos para el gráfico de líneas
         },
         locations,
       };
