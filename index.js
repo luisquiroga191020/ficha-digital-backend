@@ -331,11 +331,9 @@ app.put(
         return res.status(404).json({ message: "Afiliación no encontrada." });
       }
       if (current.rows[0].status !== "Presentado") {
-        return res
-          .status(409)
-          .json({
-            message: `Esta afiliación ya está en estado '${current.rows[0].status}' y no se puede cambiar.`,
-          });
+        return res.status(409).json({
+          message: `Esta afiliación ya está en estado '${current.rows[0].status}' y no se puede cambiar.`,
+        });
       }
 
       // Actualizamos la tabla con todos los nuevos datos
@@ -368,23 +366,172 @@ app.put(
 );
 
 // --- Datos para Selectores (Planes y Empresas) ---
-app.get("/api/planes", authenticateToken, async (req, res) => {
-  try {
-    const result = await pool.query("SELECT * FROM planes ORDER BY label");
-    res.json(result.rows);
-  } catch (error) {
-    res.status(500).json({ message: "Error interno del servidor." });
+// ==========================================================
+// ABM PARA LA TABLA DE PLANES (SOLO ADMIN)
+// ==========================================================
+app.post(
+  "/api/planes",
+  authenticateToken,
+  authorize(["ADMINISTRADOR"]),
+  async (req, res) => {
+    const { label, value, tipo } = req.body;
+    if (!label || !value || !tipo) {
+      return res
+        .status(400)
+        .json({ message: "Los campos label, value y tipo son obligatorios." });
+    }
+    try {
+      const newPlan = await pool.query(
+        "INSERT INTO planes (label, value, tipo) VALUES ($1, $2, $3) RETURNING *",
+        [label, value, tipo]
+      );
+      res.status(201).json(newPlan.rows[0]);
+    } catch (error) {
+      if (error.code === "23505") {
+        return res
+          .status(409)
+          .json({ message: 'El "value" del plan ya existe.' });
+      }
+      res.status(500).json({ message: "Error al crear el plan." });
+    }
   }
-});
+);
 
-app.get("/api/empresas", authenticateToken, async (req, res) => {
-  try {
-    const result = await pool.query("SELECT * FROM empresas ORDER BY label");
-    res.json(result.rows);
-  } catch (error) {
-    res.status(500).json({ message: "Error interno del servidor." });
+app.put(
+  "/api/planes/:id",
+  authenticateToken,
+  authorize(["ADMINISTRADOR"]),
+  async (req, res) => {
+    const { id } = req.params;
+    const { label, value, tipo } = req.body;
+    if (!label || !value || !tipo) {
+      return res
+        .status(400)
+        .json({ message: "Todos los campos son obligatorios." });
+    }
+    try {
+      const updatedPlan = await pool.query(
+        "UPDATE planes SET label = $1, value = $2, tipo = $3 WHERE id = $4 RETURNING *",
+        [label, value, tipo, id]
+      );
+      if (updatedPlan.rows.length === 0) {
+        return res.status(404).json({ message: "Plan no encontrado." });
+      }
+      res.json(updatedPlan.rows[0]);
+    } catch (error) {
+      res.status(500).json({ message: "Error al actualizar el plan." });
+    }
   }
-});
+);
+
+app.delete(
+  "/api/planes/:id",
+  authenticateToken,
+  authorize(["ADMINISTRADOR"]),
+  async (req, res) => {
+    const { id } = req.params;
+    try {
+      await pool.query("DELETE FROM planes WHERE id = $1", [id]);
+      res.status(204).send();
+    } catch (error) {
+      if (error.code === "23503") {
+        // Error de foreign key violation
+        return res
+          .status(409)
+          .json({
+            message:
+              "No se puede eliminar el plan porque está siendo utilizado por una o más afiliaciones.",
+          });
+      }
+      res.status(500).json({ message: "Error al eliminar el plan." });
+    }
+  }
+);
+
+// ==========================================================
+// ABM PARA LA TABLA DE EMPRESAS (SOLO ADMIN)
+// ==========================================================
+app.post(
+  "/api/empresas",
+  authenticateToken,
+  authorize(["ADMINISTRADOR"]),
+  async (req, res) => {
+    const { label, value } = req.body;
+    if (!label || !value) {
+      return res
+        .status(400)
+        .json({ message: "Los campos label y value son obligatorios." });
+    }
+    try {
+      const newEmpresa = await pool.query(
+        "INSERT INTO empresas (label, value) VALUES ($1, $2) RETURNING *",
+        [label, value]
+      );
+      res.status(201).json(newEmpresa.rows[0]);
+    } catch (error) {
+      if (error.code === "23505") {
+        return res
+          .status(409)
+          .json({ message: 'El "value" de la empresa ya existe.' });
+      }
+      res.status(500).json({ message: "Error al crear la empresa." });
+    }
+  }
+);
+
+app.put(
+  "/api/empresas/:id",
+  authenticateToken,
+  authorize(["ADMINISTRADOR"]),
+  async (req, res) => {
+    const { id } = req.params;
+    const { label, value } = req.body;
+    if (!label || !value) {
+      return res
+        .status(400)
+        .json({ message: "Todos los campos son obligatorios." });
+    }
+    try {
+      const updatedEmpresa = await pool.query(
+        "UPDATE empresas SET label = $1, value = $2 WHERE id = $3 RETURNING *",
+        [label, value, id]
+      );
+      if (updatedEmpresa.rows.length === 0) {
+        return res.status(404).json({ message: "Empresa no encontrada." });
+      }
+      res.json(updatedEmpresa.rows[0]);
+    } catch (error) {
+      res.status(500).json({ message: "Error al actualizar la empresa." });
+    }
+  }
+);
+
+app.delete(
+  "/api/empresas/:id",
+  authenticateToken,
+  authorize(["ADMINISTRADOR"]),
+  async (req, res) => {
+    const { id } = req.params;
+    // Aquí la validación debe ser manual porque no tenemos foreign key
+    try {
+      const usage = await pool.query(
+        "SELECT 1 FROM affiliations WHERE form_data ->> 'empresa' = (SELECT value FROM empresas WHERE id = $1) LIMIT 1",
+        [id]
+      );
+      if (usage.rows.length > 0) {
+        return res
+          .status(409)
+          .json({
+            message: "No se puede eliminar la empresa porque está en uso.",
+          });
+      }
+      await pool.query("DELETE FROM empresas WHERE id = $1", [id]);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Error al eliminar la empresa." });
+    }
+  }
+);
 
 // 6. INICIAR EL SERVIDOR
 app.listen(PORT, () => {
