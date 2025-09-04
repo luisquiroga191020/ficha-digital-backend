@@ -352,6 +352,107 @@ app.put(
   }
 );
 
+// ENDPOINT PARA LOS DATOS DEL DASHBOARD
+app.post(
+  "/api/dashboard",
+  authenticateToken,
+  authorize(["SUPERVISOR", "GERENTE", "ADMINISTRADOR"]),
+  async (req, res) => {
+    const { startDate, endDate } = req.body;
+
+    // Validación de fechas
+    if (!startDate || !endDate) {
+      return res
+        .status(400)
+        .json({ message: "Se requiere un rango de fechas." });
+    }
+
+    try {
+      // Consulta principal para obtener los datos de las afiliaciones en el rango de fechas
+      const affiliationsQuery = `
+            SELECT 
+                a.status,
+                a.latitud,
+                a.longitud,
+                a.form_data ->> 'total' as total,
+                u.full_name as vendor_name
+            FROM affiliations a
+            JOIN users u ON a.user_id = u.id
+            WHERE a.fecha_creacion BETWEEN $1 AND $2
+        `;
+      const affiliationsResult = await pool.query(affiliationsQuery, [
+        startDate,
+        endDate,
+      ]);
+      const affiliations = affiliationsResult.rows;
+
+      // --- Procesamiento de Datos para KPIs ---
+      const totalFichas = affiliations.length;
+      const fichasAprobadas = affiliations.filter(
+        (f) => f.status === "Aprobado"
+      ).length;
+      const fichasRechazadas = affiliations.filter(
+        (f) => f.status === "Rechazado"
+      ).length;
+      const fichasPendientes = affiliations.filter(
+        (f) => f.status === "Presentado"
+      ).length;
+
+      const ventasTotales = affiliations
+        .filter((f) => f.status === "Aprobado" && f.total)
+        .reduce((sum, f) => sum + parseFloat(f.total), 0);
+
+      // Contar ventas por vendedor
+      const ventasPorVendedor = affiliations.reduce((acc, f) => {
+        if (f.status === "Aprobado") {
+          acc[f.vendor_name] = (acc[f.vendor_name] || 0) + 1;
+        }
+        return acc;
+      }, {});
+
+      // Encontrar el vendedor con más ventas
+      const [topVendedor, topVendedorVentas] = Object.entries(
+        ventasPorVendedor
+      ).sort(([, a], [, b]) => b - a)[0] || ["N/A", 0];
+
+      // Extraer solo las ubicaciones para el mapa
+      const locations = affiliations
+        .filter((f) => f.latitud && f.longitud)
+        .map((f) => ({
+          lat: parseFloat(f.latitud),
+          lng: parseFloat(f.longitud),
+          status: f.status,
+        }));
+
+      // --- Ensamblar la respuesta ---
+      const dashboardData = {
+        kpis: {
+          totalFichas,
+          fichasAprobadas,
+          fichasRechazadas,
+          fichasPendientes,
+          tasaAprobacion:
+            totalFichas > 0
+              ? ((fichasAprobadas / totalFichas) * 100).toFixed(1) + "%"
+              : "0%",
+          ventasTotales: ventasTotales.toLocaleString("es-AR", {
+            style: "currency",
+            currency: "ARS",
+          }),
+          topVendedor: topVendedor,
+          topVendedorVentas,
+        },
+        locations,
+      };
+
+      res.json(dashboardData);
+    } catch (error) {
+      console.error("Error al obtener datos del dashboard:", error);
+      res.status(500).json({ message: "Error interno del servidor." });
+    }
+  }
+);
+
 // --- DATOS MAESTROS (PLANES Y EMPRESAS) ---
 
 // Endpoints de lectura (para todos los usuarios logueados)
