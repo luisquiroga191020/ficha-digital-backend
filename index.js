@@ -1,4 +1,4 @@
-// index.js (Versión completa con flujo de estados de afiliación)
+// index.js (Versión final y ordenada)
 
 // 1. IMPORTAR LIBRERÍAS
 // -----------------------------------------------------------------------------
@@ -200,7 +200,6 @@ app.post(
     }`;
 
     try {
-      // No se necesita cambiar, la DB asigna el status 'Presentado' por defecto
       await pool.query(
         "INSERT INTO affiliations (user_id, form_data, titular_nombre, titular_dni, plan, latitud, longitud) VALUES ($1, $2, $3, $4, $5, $6, $7)",
         [
@@ -224,7 +223,6 @@ app.post(
 app.get("/api/affiliations", authenticateToken, async (req, res) => {
   const { userId, role } = req.user;
   try {
-    // MODIFICADO: Se añade a.status a la selección
     let query = `
       SELECT
         a.id,
@@ -258,15 +256,13 @@ app.get("/api/affiliations", authenticateToken, async (req, res) => {
 app.get("/api/affiliations/:id", authenticateToken, async (req, res) => {
   const { id } = req.params;
   const { userId, role } = req.user;
-
   try {
-    // Unimos la tabla de afiliaciones con la de usuarios para obtener el nombre de quien cambió el estado
     let query = `
-            SELECT a.*, u.full_name as status_change_user_name 
-            FROM affiliations a
-            LEFT JOIN users u ON a.status_change_user_id = u.id
-            WHERE a.id = $1
-        `;
+        SELECT a.*, u.full_name as status_change_user_name 
+        FROM affiliations a
+        LEFT JOIN users u ON a.status_change_user_id = u.id
+        WHERE a.id = $1
+    `;
     const params = [id];
 
     if (role === "VENDEDOR") {
@@ -288,12 +284,10 @@ app.get("/api/affiliations/:id", authenticateToken, async (req, res) => {
       latitud: result.rows[0].latitud,
       longitud: result.rows[0].longitud,
       status: result.rows[0].status,
-      // Añadimos los nuevos campos a la respuesta
       statusChangeTimestamp: result.rows[0].status_change_timestamp,
       statusChangeUserName: result.rows[0].status_change_user_name,
       rechazoMotivo: result.rows[0].rechazo_motivo,
     };
-
     res.json(affiliationDetails);
   } catch (error) {
     console.error("Error al obtener detalle:", error);
@@ -301,21 +295,18 @@ app.get("/api/affiliations/:id", authenticateToken, async (req, res) => {
   }
 });
 
-// Dentro de 5. RUTAS (ENDPOINTS) DE LA API
-
 app.put(
   "/api/affiliations/:id/status",
   authenticateToken,
   authorize(["SUPERVISOR", "ADMINISTRADOR"]),
   async (req, res) => {
     const { id } = req.params;
-    const { newStatus, motivo } = req.body; // Aceptamos el nuevo campo 'motivo'
-    const changingUserId = req.user.userId; // Obtenemos el ID del usuario que realiza la acción
+    const { newStatus, motivo } = req.body;
+    const changingUserId = req.user.userId;
 
     if (!["Aprobado", "Rechazado"].includes(newStatus)) {
       return res.status(400).json({ message: "Estado no válido." });
     }
-    // Si el estado es 'Rechazado', el motivo es obligatorio
     if (newStatus === "Rechazado" && (!motivo || motivo.trim() === "")) {
       return res
         .status(400)
@@ -336,15 +327,11 @@ app.put(
         });
       }
 
-      // Actualizamos la tabla con todos los nuevos datos
       const result = await pool.query(
         `UPDATE affiliations 
-             SET status = $1, 
-                 status_change_user_id = $2, 
-                 status_change_timestamp = NOW(), 
-                 rechazo_motivo = $3 
-             WHERE id = $4 
-             RETURNING status, status_change_timestamp, rechazo_motivo`,
+         SET status = $1, status_change_user_id = $2, status_change_timestamp = NOW(), rechazo_motivo = $3 
+         WHERE id = $4 
+         RETURNING status, status_change_timestamp, rechazo_motivo`,
         [
           newStatus,
           changingUserId,
@@ -365,10 +352,28 @@ app.put(
   }
 );
 
-// --- Datos para Selectores (Planes y Empresas) ---
-// ==========================================================
-// ABM PARA LA TABLA DE PLANES (SOLO ADMIN)
-// ==========================================================
+// --- DATOS MAESTROS (PLANES Y EMPRESAS) ---
+
+// Endpoints de lectura (para todos los usuarios logueados)
+app.get("/api/planes", authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM planes ORDER BY label");
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ message: "Error interno del servidor." });
+  }
+});
+
+app.get("/api/empresas", authenticateToken, async (req, res) => {
+  try {
+    const result = await pool.query("SELECT * FROM empresas ORDER BY label");
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ message: "Error interno del servidor." });
+  }
+});
+
+// ABM de Planes (solo Admin)
 app.post(
   "/api/planes",
   authenticateToken,
@@ -435,22 +440,17 @@ app.delete(
       res.status(204).send();
     } catch (error) {
       if (error.code === "23503") {
-        // Error de foreign key violation
-        return res
-          .status(409)
-          .json({
-            message:
-              "No se puede eliminar el plan porque está siendo utilizado por una o más afiliaciones.",
-          });
+        return res.status(409).json({
+          message:
+            "No se puede eliminar el plan porque está siendo utilizado por una o más afiliaciones.",
+        });
       }
       res.status(500).json({ message: "Error al eliminar el plan." });
     }
   }
 );
 
-// ==========================================================
-// ABM PARA LA TABLA DE EMPRESAS (SOLO ADMIN)
-// ==========================================================
+// ABM de Empresas (solo Admin)
 app.post(
   "/api/empresas",
   authenticateToken,
@@ -512,18 +512,15 @@ app.delete(
   authorize(["ADMINISTRADOR"]),
   async (req, res) => {
     const { id } = req.params;
-    // Aquí la validación debe ser manual porque no tenemos foreign key
     try {
       const usage = await pool.query(
         "SELECT 1 FROM affiliations WHERE form_data ->> 'empresa' = (SELECT value FROM empresas WHERE id = $1) LIMIT 1",
         [id]
       );
       if (usage.rows.length > 0) {
-        return res
-          .status(409)
-          .json({
-            message: "No se puede eliminar la empresa porque está en uso.",
-          });
+        return res.status(409).json({
+          message: "No se puede eliminar la empresa porque está en uso.",
+        });
       }
       await pool.query("DELETE FROM empresas WHERE id = $1", [id]);
       res.status(204).send();
@@ -534,6 +531,7 @@ app.delete(
 );
 
 // 6. INICIAR EL SERVIDOR
+// -----------------------------------------------------------------------------
 app.listen(PORT, () => {
   console.log(`🚀 Servidor backend corriendo en el puerto ${PORT}`);
 });
