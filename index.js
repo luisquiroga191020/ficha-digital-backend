@@ -253,16 +253,24 @@ app.get("/api/affiliations", authenticateToken, async (req, res) => {
   }
 });
 
+// Reemplaza tu endpoint GET /api/affiliations/:id completo con este bloque
+
 app.get("/api/affiliations/:id", authenticateToken, async (req, res) => {
   const { id } = req.params;
   const { userId, role } = req.user;
+
   try {
     let query = `
-        SELECT a.*, u.full_name as status_change_user_name 
-        FROM affiliations a
-        LEFT JOIN users u ON a.status_change_user_id = u.id
-        WHERE a.id = $1
-    `;
+            SELECT 
+                a.*, 
+                creator.full_name as creator_user_name,
+                creator.codigo as creator_user_codigo,
+                status_changer.full_name as status_change_user_name 
+            FROM affiliations a
+            JOIN users creator ON a.user_id = creator.id
+            LEFT JOIN users status_changer ON a.status_change_user_id = status_changer.id
+            WHERE a.id = $1
+        `;
     const params = [id];
 
     if (role === "VENDEDOR") {
@@ -278,16 +286,21 @@ app.get("/api/affiliations/:id", authenticateToken, async (req, res) => {
         .json({ message: "Afiliación no encontrada o sin permiso." });
     }
 
+    const dbRow = result.rows[0];
+
     const affiliationDetails = {
-      ...result.rows[0].form_data,
-      id: result.rows[0].id,
-      latitud: result.rows[0].latitud,
-      longitud: result.rows[0].longitud,
-      status: result.rows[0].status,
-      statusChangeTimestamp: result.rows[0].status_change_timestamp,
-      statusChangeUserName: result.rows[0].status_change_user_name,
-      rechazoMotivo: result.rows[0].rechazo_motivo,
+      ...dbRow.form_data,
+      id: dbRow.id,
+      latitud: dbRow.latitud,
+      longitud: dbRow.longitud,
+      status: dbRow.status,
+      statusChangeTimestamp: dbRow.status_change_timestamp,
+      statusChangeUserName: dbRow.status_change_user_name,
+      rechazoMotivo: dbRow.rechazo_motivo,
+      creatorUserName: dbRow.creator_user_name,
+      creatorUserCodigo: dbRow.creator_user_codigo,
     };
+
     res.json(affiliationDetails);
   } catch (error) {
     console.error("Error al obtener detalle:", error);
