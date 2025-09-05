@@ -366,14 +366,21 @@ app.put(
 );
 
 // ENDPOINT PARA LOS DATOS DEL DASHBOARD
-// Dentro de 5. RUTAS (ENDPOINTS) DE LA API
 
 app.post(
   "/api/dashboard",
   authenticateToken,
   authorize(["SUPERVISOR", "GERENTE", "ADMINISTRADOR"]),
   async (req, res) => {
-    const { startDate, endDate } = req.body;
+    const {
+      startDate,
+      endDate,
+      selectedVendor,
+      selectedPlan,
+      selectedMedioPago,
+      selectedEmpresa,
+    } = req.body;
+
     if (!startDate || !endDate) {
       return res
         .status(400)
@@ -381,24 +388,46 @@ app.post(
     }
 
     try {
-      // Ajustamos la fecha final para que incluya todo el día
+      // Ajustamos la fecha final para que incluya todo el día hasta las 23:59:59
       const finalEndDate = new Date(endDate);
       finalEndDate.setDate(finalEndDate.getDate() + 1);
 
+      let params = [startDate, finalEndDate];
+      let paramCounter = 3; // PostgreSQL usa $1, $2, etc.
+      let whereClauses = [];
+
+      // --- Construcción dinámica de la consulta SQL ---
+      if (selectedVendor) {
+        whereClauses.push(`u.full_name = $${paramCounter++}`);
+        params.push(selectedVendor);
+      }
+      if (selectedPlan) {
+        whereClauses.push(`a.plan = $${paramCounter++}`);
+        params.push(selectedPlan);
+      }
+      if (selectedMedioPago) {
+        whereClauses.push(`a.form_data ->> 'medioPago' = $${paramCounter++}`);
+        params.push(selectedMedioPago);
+      }
+      if (selectedEmpresa) {
+        whereClauses.push(`a.form_data ->> 'empresa' = $${paramCounter++}`);
+        params.push(selectedEmpresa);
+      }
+
       const affiliationsQuery = `
             SELECT 
-                a.id, a.status, a.latitud, a.longitud, a.fecha_creacion,
+                a.id, a.status, a.latitud, a.longitud, a.fecha_creacion, a.plan,
                 a.form_data ->> 'total' as total,
-                a.form_data ->> 'plan' as plan,
                 u.full_name as vendor_name
             FROM affiliations a
             JOIN users u ON a.user_id = u.id
             WHERE a.fecha_creacion >= $1 AND a.fecha_creacion < $2
+            ${
+              whereClauses.length > 0 ? "AND " + whereClauses.join(" AND ") : ""
+            }
         `;
-      const affiliationsResult = await pool.query(affiliationsQuery, [
-        startDate,
-        finalEndDate,
-      ]);
+
+      const affiliationsResult = await pool.query(affiliationsQuery, params);
       const affiliations = affiliationsResult.rows;
 
       // --- Procesamiento de Datos para KPIs ---
@@ -409,7 +438,9 @@ app.post(
       const fichasRechazadas = affiliations.filter(
         (f) => f.status === "Rechazado"
       ).length;
-      const fichasPendientes = totalFichas - fichasAprobadas - fichasRechazadas;
+      const fichasPendientes = affiliations.filter(
+        (f) => f.status === "Presentado"
+      ).length;
 
       const ventasTotales = affiliations
         .filter((f) => f.status === "Aprobado" && f.total)
@@ -421,6 +452,7 @@ app.post(
         }
         return acc;
       }, {});
+
       const [topVendedor, topVendedorVentas] = Object.entries(
         ventasPorVendedor
       ).sort(([, a], [, b]) => b - a)[0] || ["N/A", 0];
@@ -470,7 +502,7 @@ app.post(
           topVendedorVentas,
           topPlan,
           topPlanVentas,
-          ventasPorDia, // Datos para el gráfico de líneas
+          ventasPorDia,
         },
         locations,
       };
