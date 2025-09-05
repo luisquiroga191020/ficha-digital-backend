@@ -374,7 +374,7 @@ app.post(
 
       const affiliationsQuery = `
             SELECT 
-                a.status, a.latitud, a.longitud, a.fecha_creacion,
+                a.id, a.status, a.latitud, a.longitud, a.fecha_creacion,
                 a.form_data ->> 'total' as total,
                 a.form_data ->> 'plan' as plan,
                 u.full_name as vendor_name
@@ -433,6 +433,7 @@ app.post(
       const locations = affiliations
         .filter((f) => f.latitud && f.longitud)
         .map((f) => ({
+          id: f.id,
           lat: parseFloat(f.latitud),
           lng: parseFloat(f.longitud),
           status: f.status,
