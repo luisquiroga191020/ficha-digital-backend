@@ -103,6 +103,148 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
+// --- ABM de Circulares (Solo Supervisores y Admins) ---
+app.get(
+  "/api/circulares",
+  authenticateToken,
+  authorize(["SUPERVISOR", "ADMINISTRADOR"]),
+  async (req, res) => {
+    try {
+      const result = await pool.query(
+        "SELECT c.*, u.full_name as creado_por_nombre FROM circulares c JOIN users u ON c.creado_por_id = u.id ORDER BY c.fecha_creacion DESC"
+      );
+      res.json(result.rows);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener circulares." });
+    }
+  }
+);
+
+app.post(
+  "/api/circulares",
+  authenticateToken,
+  authorize(["SUPERVISOR", "ADMINISTRADOR"]),
+  async (req, res) => {
+    const { titulo, contenido } = req.body;
+    const userId = req.user.userId;
+    if (!titulo || !contenido)
+      return res
+        .status(400)
+        .json({ message: "El título y el contenido son obligatorios." });
+    try {
+      const newCircular = await pool.query(
+        "INSERT INTO circulares (titulo, contenido, creado_por_id) VALUES ($1, $2, $3) RETURNING *",
+        [titulo, contenido, userId]
+      );
+      res.status(201).json(newCircular.rows[0]);
+    } catch (error) {
+      res.status(500).json({ message: "Error al crear la circular." });
+    }
+  }
+);
+
+app.put(
+  "/api/circulares/:id",
+  authenticateToken,
+  authorize(["SUPERVISOR", "ADMINISTRADOR"]),
+  async (req, res) => {
+    const { id } = req.params;
+    const { titulo, contenido, activa } = req.body;
+    try {
+      const updatedCircular = await pool.query(
+        "UPDATE circulares SET titulo = $1, contenido = $2, activa = $3 WHERE id = $4 RETURNING *",
+        [titulo, contenido, activa, id]
+      );
+      res.json(updatedCircular.rows[0]);
+    } catch (error) {
+      res.status(500).json({ message: "Error al actualizar la circular." });
+    }
+  }
+);
+
+// --- Lógica para Vendedores ---
+app.get("/api/mis-circulares", authenticateToken, async (req, res) => {
+  const userId = req.user.userId;
+  try {
+    // Obtenemos todas las circulares activas y le añadimos si el usuario actual ya la firmó y cuándo
+    const result = await pool.query(
+      `
+            SELECT c.*, u.full_name as creado_por_nombre, cf.fecha_firma 
+            FROM circulares c
+            JOIN users u ON c.creado_por_id = u.id
+            LEFT JOIN circulares_firmas cf ON c.id = cf.circular_id AND cf.usuario_id = $1
+            WHERE c.activa = TRUE
+            ORDER BY c.fecha_creacion DESC
+        `,
+      [userId]
+    );
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ message: "Error al obtener tus circulares." });
+  }
+});
+
+app.post("/api/circulares/:id/firmar", authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  const userId = req.user.userId;
+  try {
+    await pool.query(
+      "INSERT INTO circulares_firmas (circular_id, usuario_id) VALUES ($1, $2)",
+      [id, userId]
+    );
+    res.status(201).json({ message: "Circular firmada con éxito." });
+  } catch (error) {
+    if (error.code === "23505") {
+      // Error de 'unique constraint'
+      return res.status(409).json({ message: "Ya has firmado esta circular." });
+    }
+    res.status(500).json({ message: "Error al firmar la circular." });
+  }
+});
+
+// --- Lógica para Supervisores/Admins (Ver estado de firmas) ---
+app.get(
+  "/api/circulares/:id/firmas",
+  authenticateToken,
+  authorize(["SUPERVISOR", "ADMINISTRADOR"]),
+  async (req, res) => {
+    const { id } = req.params;
+    try {
+      // Obtenemos los usuarios que SÍ han firmado
+      const quienesFirmaron = await pool.query(
+        `
+            SELECT u.full_name, u.codigo, cf.fecha_firma
+            FROM circulares_firmas cf
+            JOIN users u ON cf.usuario_id = u.id
+            WHERE cf.circular_id = $1
+            ORDER BY cf.fecha_firma
+        `,
+        [id]
+      );
+
+      // Obtenemos TODOS los usuarios que DEBERÍAN firmar (ej. todos los vendedores)
+      const todosLosVendedores = await pool.query(
+        "SELECT id, full_name, codigo FROM users WHERE role = 'VENDEDOR'"
+      );
+
+      // Calculamos quiénes faltan
+      const firmaronIds = quienesFirmaron.rows.map((u) => u.id);
+      const faltanFirmar = todosLosVendedores.rows.filter(
+        (vendedor) => !firmaronIds.includes(vendedor.id)
+      );
+
+      res.json({
+        firmaron: quienesFirmaron.rows,
+        faltan: faltanFirmar,
+      });
+    } catch (error) {
+      res
+        .status(500)
+        .json({ message: "Error al obtener el estado de las firmas." });
+    }
+  }
+);
+
 // --- GESTIÓN DE USUARIOS (SOLO ADMIN) ---
 app.get(
   "/api/users",
@@ -253,14 +395,12 @@ app.get("/api/affiliations", authenticateToken, async (req, res) => {
   }
 });
 
-
-
 app.get("/api/affiliations/:id", authenticateToken, async (req, res) => {
-    const { id } = req.params;
-    const { userId, role } = req.user;
-  
-    try {
-      let query = `
+  const { id } = req.params;
+  const { userId, role } = req.user;
+
+  try {
+    let query = `
           SELECT 
               a.*, 
               creator.full_name as creator_user_name,
@@ -271,42 +411,42 @@ app.get("/api/affiliations/:id", authenticateToken, async (req, res) => {
           LEFT JOIN users status_changer ON a.status_change_user_id = status_changer.id
           WHERE a.id = $1
       `;
-      const params = [id];
-  
-      if (role === "VENDEDOR") {
-        query += " AND a.user_id = $2";
-        params.push(userId);
-      }
-  
-      const result = await pool.query(query, params);
-  
-      if (result.rows.length === 0) {
-        return res
-          .status(404)
-          .json({ message: "Afiliación no encontrada o sin permiso." });
-      }
-  
-      const dbRow = result.rows[0];
-  
-      const affiliationDetails = {
-        ...dbRow.form_data,
-        id: dbRow.id,
-        solicitud: dbRow.form_data.solicitud, 
-        latitud: dbRow.latitud,
-        longitud: dbRow.longitud,
-        status: dbRow.status,
-        statusChangeTimestamp: dbRow.status_change_timestamp,
-        statusChangeUserName: dbRow.status_change_user_name,
-        rechazoMotivo: dbRow.rechazo_motivo,
-        creatorUserName: dbRow.creator_user_name,
-        creatorUserCodigo: dbRow.creator_user_codigo,
-      };
-  
-      res.json(affiliationDetails);
-    } catch (error) {
-      console.error("Error al obtener detalle:", error);
-      res.status(500).json({ message: "Error interno del servidor." });
+    const params = [id];
+
+    if (role === "VENDEDOR") {
+      query += " AND a.user_id = $2";
+      params.push(userId);
     }
+
+    const result = await pool.query(query, params);
+
+    if (result.rows.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "Afiliación no encontrada o sin permiso." });
+    }
+
+    const dbRow = result.rows[0];
+
+    const affiliationDetails = {
+      ...dbRow.form_data,
+      id: dbRow.id,
+      solicitud: dbRow.form_data.solicitud,
+      latitud: dbRow.latitud,
+      longitud: dbRow.longitud,
+      status: dbRow.status,
+      statusChangeTimestamp: dbRow.status_change_timestamp,
+      statusChangeUserName: dbRow.status_change_user_name,
+      rechazoMotivo: dbRow.rechazo_motivo,
+      creatorUserName: dbRow.creator_user_name,
+      creatorUserCodigo: dbRow.creator_user_codigo,
+    };
+
+    res.json(affiliationDetails);
+  } catch (error) {
+    console.error("Error al obtener detalle:", error);
+    res.status(500).json({ message: "Error interno del servidor." });
+  }
 });
 
 app.put(
