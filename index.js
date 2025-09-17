@@ -443,6 +443,8 @@ app.get("/api/affiliations/:id", authenticateToken, async (req, res) => {
       rechazoMotivo: dbRow.rechazo_motivo,
       creatorUserName: dbRow.creator_user_name,
       creatorUserCodigo: dbRow.creator_user_codigo,
+      domicilio_latitud: dbRow.domicilio_latitud,
+      domicilio_longitud: dbRow.domicilio_longitud,
     };
 
     res.json(affiliationDetails);
