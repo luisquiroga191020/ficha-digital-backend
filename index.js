@@ -336,6 +336,7 @@ app.post(
   authorize(["VENDEDOR", "SUPERVISOR", "ADMINISTRADOR"]),
   async (req, res) => {
     const { formData, latitud, longitud } = req.body;
+    const { latitudDomicilio, longitudDomicilio } = formData;
     const userId = req.user.userId;
     const titular_nombre = `${formData.apellidoTitular || ""}, ${
       formData.nombreTitular || ""
@@ -343,7 +344,7 @@ app.post(
 
     try {
       await pool.query(
-        "INSERT INTO affiliations (user_id, form_data, titular_nombre, titular_dni, plan, latitud, longitud) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        "INSERT INTO affiliations (user_id, form_data, titular_nombre, titular_dni, plan, latitud, longitud, domicilio_latitud, domicilio_longitud) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
         [
           userId,
           formData,
@@ -352,6 +353,8 @@ app.post(
           formData.plan,
           latitud,
           longitud,
+          latitudDomicilio,
+          longitudDomicilio,
         ]
       );
       res.status(201).json({ message: "Ficha guardada correctamente." });
