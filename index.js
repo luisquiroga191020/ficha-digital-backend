@@ -562,7 +562,7 @@ app.post(
 
       const affiliationsQuery = `
             SELECT 
-                a.id, a.status, a.latitud, a.longitud, a.fecha_creacion, a.plan,
+                a.id, a.status, a.latitud, a.longitud, a.domicilio_latitud, a.domicilio_longitud, a.fecha_creacion, a.plan,
                 a.form_data ->> 'total' as total,
                 u.full_name as vendor_name
             FROM affiliations a
@@ -622,13 +622,24 @@ app.post(
       }, {});
 
       const locations = affiliations
-        .filter((f) => f.latitud && f.longitud)
         .map((f) => ({
           id: f.id,
-          lat: parseFloat(f.latitud),
-          lng: parseFloat(f.longitud),
           status: f.status,
-        }));
+          // Objeto para la ubicación de la VENTA
+          venta: {
+            lat: f.latitud ? parseFloat(f.latitud) : null,
+            lng: f.longitud ? parseFloat(f.longitud) : null,
+          },
+          // Objeto para la ubicación del DOMICILIO
+          domicilio: {
+            lat: f.domicilio_latitud ? parseFloat(f.domicilio_latitud) : null,
+            lng: f.domicilio_longitud ? parseFloat(f.domicilio_longitud) : null,
+          },
+        }))
+        .filter(
+          (f) =>
+            (f.venta.lat && f.venta.lng) || (f.domicilio.lat && f.domicilio.lng)
+        );
 
       // --- Ensamblar la respuesta ---
       const dashboardData = {
