@@ -1,5 +1,3 @@
-// index.js (Versión final y ordenada)
-
 // 1. IMPORTAR LIBRERÍAS
 // -----------------------------------------------------------------------------
 require("dotenv").config();
@@ -103,7 +101,7 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-// --- ABM de Circulares (Solo Supervisores y Admins) ---
+// --- ABM de Circulares ---
 app.get(
   "/api/circulares",
   authenticateToken,
@@ -166,7 +164,6 @@ app.put(
 app.get("/api/mis-circulares", authenticateToken, async (req, res) => {
   const userId = req.user.userId;
   try {
-    // Obtenemos todas las circulares activas y le añadimos si el usuario actual ya la firmó y cuándo
     const result = await pool.query(
       `
             SELECT c.*, u.full_name as creado_por_nombre, cf.fecha_firma 
@@ -195,7 +192,6 @@ app.post("/api/circulares/:id/firmar", authenticateToken, async (req, res) => {
     res.status(201).json({ message: "Circular firmada con éxito." });
   } catch (error) {
     if (error.code === "23505") {
-      // Error de 'unique constraint'
       return res.status(409).json({ message: "Ya has firmado esta circular." });
     }
     res.status(500).json({ message: "Error al firmar la circular." });
@@ -210,7 +206,6 @@ app.get(
   async (req, res) => {
     const { id } = req.params;
     try {
-      // Obtenemos los usuarios que SÍ han firmado
       const quienesFirmaron = await pool.query(
         `
             SELECT u.full_name, u.codigo, cf.fecha_firma
@@ -222,12 +217,10 @@ app.get(
         [id]
       );
 
-      // Obtenemos TODOS los usuarios que DEBERÍAN firmar (ej. todos los vendedores)
       const todosLosVendedores = await pool.query(
         "SELECT id, full_name, codigo FROM users WHERE role = 'VENDEDOR'"
       );
 
-      // Calculamos quiénes faltan
       const firmaronIds = quienesFirmaron.rows.map((u) => u.id);
       const faltanFirmar = todosLosVendedores.rows.filter(
         (vendedor) => !firmaronIds.includes(vendedor.id)
@@ -534,15 +527,14 @@ app.post(
     }
 
     try {
-      // Ajustamos la fecha final para que incluya todo el día hasta las 23:59:59
       const finalEndDate = new Date(endDate);
       finalEndDate.setDate(finalEndDate.getDate() + 1);
 
       let params = [startDate, finalEndDate];
-      let paramCounter = 3; // PostgreSQL usa $1, $2, etc.
+      let paramCounter = 3;
       let whereClauses = [];
 
-      // --- Construcción dinámica de la consulta SQL ---
+      // --- Dinámica de la consulta SQL ---
       if (selectedVendor) {
         whereClauses.push(`u.full_name = $${paramCounter++}`);
         params.push(selectedVendor);
@@ -641,7 +633,6 @@ app.post(
             (f.venta.lat && f.venta.lng) || (f.domicilio.lat && f.domicilio.lng)
         );
 
-      // --- Ensamblar la respuesta ---
       const dashboardData = {
         kpis: {
           totalFichas,
@@ -674,7 +665,7 @@ app.post(
 
 // --- DATOS MAESTROS (PLANES Y EMPRESAS) ---
 
-// Endpoints de lectura (para todos los usuarios logueados)
+// Endpoints de lectura
 app.get("/api/planes", authenticateToken, async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM planes ORDER BY label");
@@ -699,16 +690,44 @@ app.post(
   authenticateToken,
   authorize(["ADMINISTRADOR"]),
   async (req, res) => {
-    const { label, value, tipo } = req.body;
-    if (!label || !value || !tipo) {
+    const {
+      label,
+      value,
+      tipo,
+      importe_grupo_familiar,
+      importe_individual,
+      importe_adherente,
+      titulo,
+    } = req.body;
+
+    if (
+      !label ||
+      !value ||
+      !tipo ||
+      !importe_grupo_familiar ||
+      !importe_individual ||
+      !importe_adherente ||
+      !titulo
+    ) {
       return res
         .status(400)
-        .json({ message: "Los campos label, value y tipo son obligatorios." });
+        .json({ message: "Todos los campos son obligatorios." });
     }
     try {
       const newPlan = await pool.query(
-        "INSERT INTO planes (label, value, tipo) VALUES ($1, $2, $3) RETURNING *",
-        [label, value, tipo]
+        `INSERT INTO planes (
+            label, value, tipo, 
+            importe_grupo_familiar, importe_individual, importe_adherente, titulo
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+        [
+          label,
+          value,
+          tipo,
+          importe_grupo_familiar,
+          importe_individual,
+          importe_adherente,
+          titulo,
+        ]
       );
       res.status(201).json(newPlan.rows[0]);
     } catch (error) {
@@ -728,16 +747,49 @@ app.put(
   authorize(["ADMINISTRADOR"]),
   async (req, res) => {
     const { id } = req.params;
-    const { label, value, tipo } = req.body;
-    if (!label || !value || !tipo) {
+    // 1. Extraemos los nuevos campos del body
+    const {
+      label,
+      value,
+      tipo,
+      importe_grupo_familiar,
+      importe_individual,
+      importe_adherente,
+      titulo,
+    } = req.body;
+
+    // 2. Actualizamos la validación
+    if (
+      !label ||
+      !value ||
+      !tipo ||
+      !importe_grupo_familiar ||
+      !importe_individual ||
+      !importe_adherente ||
+      !titulo
+    ) {
       return res
         .status(400)
         .json({ message: "Todos los campos son obligatorios." });
     }
     try {
+      // 3. Actualizamos la consulta SQL de UPDATE
       const updatedPlan = await pool.query(
-        "UPDATE planes SET label = $1, value = $2, tipo = $3 WHERE id = $4 RETURNING *",
-        [label, value, tipo, id]
+        `UPDATE planes 
+         SET label = $1, value = $2, tipo = $3, 
+             importe_grupo_familiar = $4, importe_individual = $5, 
+             importe_adherente = $6, titulo = $7 
+         WHERE id = $8 RETURNING *`,
+        [
+          label,
+          value,
+          tipo,
+          importe_grupo_familiar,
+          importe_individual,
+          importe_adherente,
+          titulo,
+          id,
+        ]
       );
       if (updatedPlan.rows.length === 0) {
         return res.status(404).json({ message: "Plan no encontrado." });
