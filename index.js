@@ -525,11 +525,13 @@ app.put(
 app.post(
   "/api/affiliations/:id/fotos",
   authenticateToken,
+  authorize(["VENDEDOR", "SUPERVISOR", "ADMINISTRADOR"]), // Asegura que solo los roles correctos puedan subir
   upload.single("foto"), // Middleware de Multer para recibir un solo archivo llamado 'foto'
   async (req, res) => {
     const { id } = req.params;
     const { descripcion } = req.body;
 
+    // Validación: Asegurarse de que se envió un archivo
     if (!req.file) {
       return res
         .status(400)
@@ -537,33 +539,48 @@ app.post(
     }
 
     try {
-      // Subir el archivo desde el buffer de memoria a Cloudinary
+      // 1. Subir el archivo desde el buffer de memoria a Cloudinary
       const uploadResult = await new Promise((resolve, reject) => {
+        // Usamos upload_stream para manejar el buffer directamente
         const uploadStream = cloudinary.uploader.upload_stream(
           {
-            folder: `afiliaciones/${id}`, // Organiza las fotos en carpetas por ID de afiliación
-            public_id: `${Date.now()}`, // Un nombre de archivo único
+            // Opciones de subida a Cloudinary
+            folder: `afiliaciones/${id}`, // Organiza las fotos en carpetas por ID de afiliación para mantener el orden
+            public_id: `${Date.now()}`, // Un nombre de archivo único basado en la fecha para evitar colisiones
           },
           (error, result) => {
-            if (error) return reject(error);
+            // Callback que se ejecuta cuando la subida termina (con éxito o error)
+            if (error) {
+              return reject(error);
+            }
             resolve(result);
           }
         );
+        // Enviamos el buffer del archivo (que Multer puso en req.file.buffer) al stream de Cloudinary
         uploadStream.end(req.file.buffer);
       });
 
+      // Extraemos los datos importantes de la respuesta de Cloudinary
       const { public_id, secure_url } = uploadResult;
 
-      // Guardar la información de la foto en nuestra base de datos
+      // 2. Guardar la información de la foto en nuestra base de datos PostgreSQL
       const newFoto = await pool.query(
         "INSERT INTO afiliacion_fotos (afiliacion_id, public_id, url_segura, descripcion) VALUES ($1, $2, $3, $4) RETURNING *",
         [id, public_id, secure_url, descripcion]
       );
 
+      // 3. Devolver la información de la foto recién creada al frontend
       res.status(201).json(newFoto.rows[0]);
     } catch (error) {
-      console.error("Error al subir la foto:", error);
-      res.status(500).json({ message: "Error interno al subir la foto." });
+      // Manejo de errores
+      console.error(
+        "Error al subir la foto a la afiliación con ID:",
+        id,
+        error
+      );
+      res
+        .status(500)
+        .json({ message: "Error interno del servidor al procesar la foto." });
     }
   }
 );
