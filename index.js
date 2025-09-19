@@ -6,11 +6,22 @@ const cors = require("cors");
 const { Pool } = require("pg");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const cloudinary = require("cloudinary").v2;
+const multer = require("multer");
 
 // 2. CONFIGURACIÓN INICIAL
 // -----------------------------------------------------------------------------
 const app = express();
 const PORT = process.env.PORT || 3001;
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+  secure: true,
+});
+
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: { rejectUnauthorized: false },
@@ -198,7 +209,7 @@ app.post("/api/circulares/:id/firmar", authenticateToken, async (req, res) => {
   }
 });
 
-// --- Lógica para Supervisores/Admins (Ver estado de firmas) ---
+// --- Lógica para Supervisores/Admins ---
 app.get(
   "/api/circulares/:id/firmas",
   authenticateToken,
@@ -238,7 +249,7 @@ app.get(
   }
 );
 
-// --- GESTIÓN DE USUARIOS (SOLO ADMIN) ---
+// --- GESTIÓN DE USUARIOS ---
 app.get(
   "/api/users",
   authenticateToken,
@@ -422,6 +433,11 @@ app.get("/api/affiliations/:id", authenticateToken, async (req, res) => {
         .json({ message: "Afiliación no encontrada o sin permiso." });
     }
 
+    const fotosResult = await pool.query(
+      "SELECT id, url_segura, descripcion, fecha_subida FROM afiliacion_fotos WHERE afiliacion_id = $1 ORDER BY fecha_subida DESC",
+      [id]
+    );
+
     const dbRow = result.rows[0];
 
     const affiliationDetails = {
@@ -438,6 +454,7 @@ app.get("/api/affiliations/:id", authenticateToken, async (req, res) => {
       creatorUserCodigo: dbRow.creator_user_codigo,
       domicilio_latitud: dbRow.domicilio_latitud,
       domicilio_longitud: dbRow.domicilio_longitud,
+      fotos: fotosResult.rows,
     };
 
     res.json(affiliationDetails);
@@ -504,6 +521,53 @@ app.put(
   }
 );
 
+// --- ENDPOINT PARA SUBIR FOTOS A UNA AFILIACIÓN ---
+app.post(
+  "/api/affiliations/:id/fotos",
+  authenticateToken,
+  upload.single("foto"), // Middleware de Multer para recibir un solo archivo llamado 'foto'
+  async (req, res) => {
+    const { id } = req.params;
+    const { descripcion } = req.body;
+
+    if (!req.file) {
+      return res
+        .status(400)
+        .json({ message: "No se ha subido ningún archivo." });
+    }
+
+    try {
+      // Subir el archivo desde el buffer de memoria a Cloudinary
+      const uploadResult = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: `afiliaciones/${id}`, // Organiza las fotos en carpetas por ID de afiliación
+            public_id: `${Date.now()}`, // Un nombre de archivo único
+          },
+          (error, result) => {
+            if (error) return reject(error);
+            resolve(result);
+          }
+        );
+        uploadStream.end(req.file.buffer);
+      });
+
+      const { public_id, secure_url } = uploadResult;
+
+      // Guardar la información de la foto en nuestra base de datos
+      const newFoto = await pool.query(
+        "INSERT INTO afiliacion_fotos (afiliacion_id, public_id, url_segura, descripcion) VALUES ($1, $2, $3, $4) RETURNING *",
+        [id, public_id, secure_url, descripcion]
+      );
+
+      res.status(201).json(newFoto.rows[0]);
+    } catch (error) {
+      console.error("Error al subir la foto:", error);
+      res.status(500).json({ message: "Error interno al subir la foto." });
+    }
+  }
+);
+
 // ENDPOINT PARA LOS DATOS DEL DASHBOARD
 
 app.post(
@@ -534,7 +598,6 @@ app.post(
       let paramCounter = 3;
       let whereClauses = [];
 
-      // --- Dinámica de la consulta SQL ---
       if (selectedVendor) {
         whereClauses.push(`u.full_name = $${paramCounter++}`);
         params.push(selectedVendor);
@@ -568,7 +631,6 @@ app.post(
       const affiliationsResult = await pool.query(affiliationsQuery, params);
       const affiliations = affiliationsResult.rows;
 
-      // --- Procesamiento de Datos para KPIs ---
       const totalFichas = affiliations.length;
       const fichasAprobadas = affiliations.filter(
         (f) => f.status === "Aprobado"
@@ -617,12 +679,12 @@ app.post(
         .map((f) => ({
           id: f.id,
           status: f.status,
-          // Objeto para la ubicación de la VENTA
+
           venta: {
             lat: f.latitud ? parseFloat(f.latitud) : null,
             lng: f.longitud ? parseFloat(f.longitud) : null,
           },
-          // Objeto para la ubicación del DOMICILIO
+
           domicilio: {
             lat: f.domicilio_latitud ? parseFloat(f.domicilio_latitud) : null,
             lng: f.domicilio_longitud ? parseFloat(f.domicilio_longitud) : null,
@@ -663,7 +725,7 @@ app.post(
   }
 );
 
-// --- DATOS MAESTROS (PLANES Y EMPRESAS) ---
+// --- DATOS MAESTROS ---
 
 // Endpoints de lectura
 app.get("/api/planes", authenticateToken, async (req, res) => {
@@ -684,7 +746,7 @@ app.get("/api/empresas", authenticateToken, async (req, res) => {
   }
 });
 
-// ABM de Planes (solo Admin)
+// ABM de Planes
 app.post(
   "/api/planes",
   authenticateToken,
@@ -747,7 +809,6 @@ app.put(
   authorize(["ADMINISTRADOR"]),
   async (req, res) => {
     const { id } = req.params;
-    // 1. Extraemos los nuevos campos del body
     const {
       label,
       value,
@@ -758,7 +819,6 @@ app.put(
       titulo,
     } = req.body;
 
-    // 2. Actualizamos la validación
     if (
       !label ||
       !value ||
@@ -773,7 +833,6 @@ app.put(
         .json({ message: "Todos los campos son obligatorios." });
     }
     try {
-      // 3. Actualizamos la consulta SQL de UPDATE
       const updatedPlan = await pool.query(
         `UPDATE planes 
          SET label = $1, value = $2, tipo = $3, 
@@ -822,7 +881,7 @@ app.delete(
   }
 );
 
-// ABM de Empresas (solo Admin)
+// ABM de Empresas
 app.post(
   "/api/empresas",
   authenticateToken,
