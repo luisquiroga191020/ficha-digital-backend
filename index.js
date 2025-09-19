@@ -348,7 +348,7 @@ app.post(
 
     try {
       await pool.query(
-        "INSERT INTO affiliations (user_id, form_data, titular_nombre, titular_dni, plan, latitud, longitud, domicilio_latitud, domicilio_longitud) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)",
+        "INSERT INTO affiliations (user_id, form_data, titular_nombre, titular_dni, plan, latitud, longitud, domicilio_latitud, domicilio_longitud) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *",
         [
           userId,
           formData,
