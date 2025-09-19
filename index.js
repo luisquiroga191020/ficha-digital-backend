@@ -334,6 +334,8 @@ app.delete(
 );
 
 // --- GESTIÓN DE AFILIACIONES ---
+// En tu archivo del backend: index.js
+
 app.post(
   "/api/submit-ficha",
   authenticateToken,
@@ -342,13 +344,15 @@ app.post(
     const { formData, latitud, longitud } = req.body;
     const { latitudDomicilio, longitudDomicilio } = formData;
     const userId = req.user.userId;
-    const titular_nombre = `${formData.apellidoTitular || ""}, ${
-      formData.nombreTitular || ""
-    }`;
+    const titular_nombre = `${formData.apellidoTitular || ""}, ${formData.nombreTitular || ""}`;
 
     try {
-      await pool.query(
-        "INSERT INTO affiliations (user_id, form_data, titular_nombre, titular_dni, plan, latitud, longitud, domicilio_latitud, domicilio_longitud) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *",
+      const result = await pool.query(
+        `INSERT INTO affiliations (
+            user_id, form_data, titular_nombre, titular_dni, plan, 
+            latitud, longitud, 
+            domicilio_latitud, domicilio_longitud
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
         [
           userId,
           formData,
@@ -361,7 +365,9 @@ app.post(
           longitudDomicilio,
         ]
       );
-      res.status(201).json({ message: "Ficha guardada correctamente." });
+
+      res.status(201).json(result.rows[0]);
+
     } catch (error) {
       console.error("Error al guardar la ficha:", error);
       res.status(500).json({ message: "Error al guardar la ficha." });
