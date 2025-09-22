@@ -585,7 +585,7 @@ app.post(
 
       // 2. Guardar la información de la foto en nuestra base de datos PostgreSQL
       const newFoto = await pool.query(
-        "INSERT INTO afiliacion_fotos (afiliacion_id, public_id, url_segura, descripcion) VALUES ($1, $2, $3, $4) RETURNING *",
+        "INSERT INTO afiliacion_fotos (afiliacion_id, public_id, descripcion) VALUES ($1, $2, $3, $4) RETURNING *",
         [id, public_id, secure_url, descripcion]
       );
 
