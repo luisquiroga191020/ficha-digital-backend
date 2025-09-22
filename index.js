@@ -377,31 +377,75 @@ app.post(
 
 app.get("/api/affiliations", authenticateToken, async (req, res) => {
   const { userId, role } = req.user;
+
+  const { page = 1, rowsPerPage = 20, filter, sortBy, descending } = req.query;
+
   try {
-    let query = `
-      SELECT
-        a.id,
-        a.titular_nombre,
-        a.titular_dni,
-        a.plan,
-        a.form_data ->> 'total' as total,
-        u.full_name as vendor_name,
-        a.fecha_creacion,
-        a.status
-      FROM affiliations a
-      JOIN users u ON a.user_id = u.id
-    `;
+    let whereClauses = [];
     const params = [];
+    let paramCounter = 1;
 
     if (role === "VENDEDOR") {
-      query += " WHERE a.user_id = $1";
+      whereClauses.push(`a.user_id = $${paramCounter++}`);
       params.push(userId);
     }
 
-    query += " ORDER BY a.fecha_creacion DESC";
+    if (filter) {
+      whereClauses.push(
+        `(a.titular_nombre ILIKE $${paramCounter} OR a.titular_dni ILIKE $${paramCounter} OR a.plan ILIKE $${paramCounter} OR u.full_name ILIKE $${paramCounter})`
+      );
+      params.push(`%${filter}%`);
+      paramCounter++;
+    }
 
-    const result = await pool.query(query, params);
-    res.json(result.rows);
+    const whereCondition =
+      whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
+
+    const totalResult = await pool.query(
+      `SELECT COUNT(*) FROM affiliations a JOIN users u ON a.user_id = u.id ${whereCondition}`,
+      params
+    );
+    const totalRows = parseInt(totalResult.rows[0].count, 10);
+
+    const offset = (page - 1) * rowsPerPage;
+    const limit = rowsPerPage === "0" ? null : rowsPerPage;
+
+    const orderByMap = {
+      titular_nombre: "a.titular_nombre",
+      plan: "a.plan",
+      total: "CAST(a.form_data ->> 'total' AS NUMERIC)",
+      status: "a.status",
+      vendor_name: "u.full_name",
+      fecha_creacion: "a.fecha_creacion",
+    };
+    const orderByColumn = orderByMap[sortBy] || "a.fecha_creacion";
+    const orderDirection = descending === "true" ? "DESC" : "ASC";
+
+    const finalParams = [...params];
+    if (limit !== null) {
+      finalParams.push(limit);
+    }
+    finalParams.push(offset);
+
+    const query = `
+      SELECT
+        a.id, a.titular_nombre, a.titular_dni, a.plan, a.status, a.fecha_creacion,
+        a.form_data ->> 'total' as total,
+        u.full_name as vendor_name
+      FROM affiliations a
+      JOIN users u ON a.user_id = u.id
+      ${whereCondition}
+      ORDER BY ${orderByColumn} ${orderDirection}
+      ${limit !== null ? `LIMIT $${paramCounter++}` : ""}
+      OFFSET $${paramCounter++}
+    `;
+
+    const result = await pool.query(query, finalParams);
+
+    res.json({
+      rows: result.rows,
+      totalRows: totalRows,
+    });
   } catch (error) {
     console.error("Error al obtener afiliaciones:", error);
     res.status(500).json({ message: "Error al obtener afiliaciones." });
