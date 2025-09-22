@@ -344,7 +344,9 @@ app.post(
     const { formData, latitud, longitud } = req.body;
     const { latitudDomicilio, longitudDomicilio } = formData;
     const userId = req.user.userId;
-    const titular_nombre = `${formData.apellidoTitular || ""}, ${formData.nombreTitular || ""}`;
+    const titular_nombre = `${formData.apellidoTitular || ""}, ${
+      formData.nombreTitular || ""
+    }`;
 
     try {
       const result = await pool.query(
@@ -367,7 +369,6 @@ app.post(
       );
 
       res.status(201).json(result.rows[0]);
-
     } catch (error) {
       console.error("Error al guardar la ficha:", error);
       res.status(500).json({ message: "Error al guardar la ficha." });
@@ -440,9 +441,21 @@ app.get("/api/affiliations/:id", authenticateToken, async (req, res) => {
     }
 
     const fotosResult = await pool.query(
-      "SELECT id, url_segura, descripcion, fecha_subida FROM afiliacion_fotos WHERE afiliacion_id = $1 ORDER BY fecha_subida DESC",
+      "SELECT id, public_id, descripcion, fecha_subida FROM afiliacion_fotos WHERE afiliacion_id = $1 ORDER BY fecha_subida DESC",
       [id]
     );
+
+    const fotosConUrlSegura = fotosResult.rows.map((foto) => {
+      const urlFirmada = cloudinary.url(foto.public_id, {
+        type: "authenticated",
+        sign_url: true, // Le dice que genere la firma
+        expires_at: Math.floor(Date.now() / 1000) + 3600, // Válida por 1 hora
+      });
+      return {
+        ...foto,
+        url_segura: urlFirmada, // Reemplazamos la URL por la firmada y temporal
+      };
+    });
 
     const dbRow = result.rows[0];
 
@@ -460,7 +473,7 @@ app.get("/api/affiliations/:id", authenticateToken, async (req, res) => {
       creatorUserCodigo: dbRow.creator_user_codigo,
       domicilio_latitud: dbRow.domicilio_latitud,
       domicilio_longitud: dbRow.domicilio_longitud,
-      fotos: fotosResult.rows,
+      fotos: fotosConUrlSegura,
     };
 
     res.json(affiliationDetails);
@@ -552,7 +565,8 @@ app.post(
           {
             // Opciones de subida a Cloudinary
             folder: `afiliaciones/${id}`, // Organiza las fotos en carpetas por ID de afiliación para mantener el orden
-            public_id: `${Date.now()}`, // Un nombre de archivo único basado en la fecha para evitar colisiones
+            public_id: `${Date.now()}`,
+            type: "authenticated", // Un nombre de archivo único basado en la fecha para evitar colisiones
           },
           (error, result) => {
             // Callback que se ejecuta cuando la subida termina (con éxito o error)
