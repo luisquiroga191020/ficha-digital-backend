@@ -334,7 +334,6 @@ app.delete(
 );
 
 // --- GESTIÓN DE AFILIACIONES ---
-// En tu archivo del backend: index.js
 
 app.post(
   "/api/submit-ficha",
@@ -448,12 +447,12 @@ app.get("/api/affiliations/:id", authenticateToken, async (req, res) => {
     const fotosConUrlSegura = fotosResult.rows.map((foto) => {
       const urlFirmada = cloudinary.url(foto.public_id, {
         type: "authenticated",
-        sign_url: true, // Le dice que genere la firma
-        expires_at: Math.floor(Date.now() / 1000) + 3600, // Válida por 1 hora
+        sign_url: true,
+        expires_at: Math.floor(Date.now() / 1000) + 3600,
       });
       return {
         ...foto,
-        url_segura: urlFirmada, // Reemplazamos la URL por la firmada y temporal
+        url_segura: urlFirmada,
       };
     });
 
@@ -544,13 +543,12 @@ app.put(
 app.post(
   "/api/affiliations/:id/fotos",
   authenticateToken,
-  authorize(["VENDEDOR", "SUPERVISOR", "ADMINISTRADOR"]), // Asegura que solo los roles correctos puedan subir
-  upload.single("foto"), // Middleware de Multer para recibir un solo archivo llamado 'foto'
+  authorize(["VENDEDOR", "SUPERVISOR", "ADMINISTRADOR"]),
+  upload.single("foto"),
   async (req, res) => {
     const { id } = req.params;
     const { descripcion } = req.body;
 
-    // Validación: Asegurarse de que se envió un archivo
     if (!req.file) {
       return res
         .status(400)
@@ -558,41 +556,33 @@ app.post(
     }
 
     try {
-      // 1. Subir el archivo desde el buffer de memoria a Cloudinary
       const uploadResult = await new Promise((resolve, reject) => {
-        // Usamos upload_stream para manejar el buffer directamente
         const uploadStream = cloudinary.uploader.upload_stream(
           {
-            // Opciones de subida a Cloudinary
-            folder: `afiliaciones/${id}`, // Organiza las fotos en carpetas por ID de afiliación para mantener el orden
+            folder: `afiliaciones/${id}`,
             public_id: `${Date.now()}`,
-            type: "authenticated", // Un nombre de archivo único basado en la fecha para evitar colisiones
+            type: "authenticated",
           },
           (error, result) => {
-            // Callback que se ejecuta cuando la subida termina (con éxito o error)
             if (error) {
               return reject(error);
             }
             resolve(result);
           }
         );
-        // Enviamos el buffer del archivo (que Multer puso en req.file.buffer) al stream de Cloudinary
+
         uploadStream.end(req.file.buffer);
       });
 
-      // Extraemos los datos importantes de la respuesta de Cloudinary
-      const { public_id, secure_url } = uploadResult;
+      const { public_id } = uploadResult;
 
-      // 2. Guardar la información de la foto en nuestra base de datos PostgreSQL
       const newFoto = await pool.query(
-        "INSERT INTO afiliacion_fotos (afiliacion_id, public_id, descripcion) VALUES ($1, $2, $3, $4) RETURNING *",
-        [id, public_id, secure_url, descripcion]
+        "INSERT INTO afiliacion_fotos (afiliacion_id, public_id, descripcion) VALUES ($1, $2, $3) RETURNING *",
+        [id, public_id, descripcion]
       );
 
-      // 3. Devolver la información de la foto recién creada al frontend
       res.status(201).json(newFoto.rows[0]);
     } catch (error) {
-      // Manejo de errores
       console.error(
         "Error al subir la foto a la afiliación con ID:",
         id,
