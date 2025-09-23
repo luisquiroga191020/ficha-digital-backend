@@ -29,12 +29,16 @@ const pool = new Pool({
 
 // 3. MIDDLEWARES
 // -----------------------------------------------------------------------------
-const corsOptions = {
-  origin: "*",
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-};
-app.use(cors(corsOptions));
+app.use(
+  cors({
+    origin: "*",
+    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+    allowedHeaders: "Content-Type,Authorization",
+    exposedHeaders: "Content-Disposition",
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+  })
+);
 app.use(express.json({ limit: "5mb" }));
 
 // 4. LÓGICA DE AUTENTICACIÓN Y AUTORIZACIÓN
