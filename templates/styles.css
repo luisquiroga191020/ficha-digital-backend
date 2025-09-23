@@ -1,0 +1,121 @@
+#pdf-container {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background-color: white;
+  font-family: "Roboto", sans-serif;
+  color: #333;
+}
+.pdf-page {
+  width: 210mm;
+  min-height: 297mm;
+  padding: 10mm;
+  box-sizing: border-box;
+  font-size: 8pt;
+  position: relative;
+}
+
+.pdf-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 2px solid #219c90;
+}
+.header-details {
+  text-align: right;
+}
+.header-details div {
+  font-size: 8.5pt;
+  color: #666;
+  line-height: 1.2;
+}
+.pdf-subheader {
+  display: flex;
+  justify-content: space-between;
+  font-size: 8.5pt;
+  padding: 3px 0;
+  margin-bottom: 10px;
+  color: #555;
+}
+
+.pdf-section {
+  margin-bottom: 10px;
+}
+.pdf-section-title {
+  background-color: #f0f2f5;
+  color: #219c90;
+  font-weight: 700;
+  font-size: 8pt;
+  text-align: left;
+  padding: 2px 6px;
+  margin-bottom: 4px;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+}
+.pdf-data-fluid {
+  font-size: 7pt;
+  line-height: 1.5;
+  color: #444;
+}
+
+.pdf-data-item {
+  display: inline-block;
+  margin-right: 12px;
+  padding-bottom: 2px;
+}
+.pdf-data-item .label {
+  font-weight: normal;
+  color: #555;
+  margin-right: 4px;
+}
+.pdf-data-item .data {
+  font-weight: bold;
+}
+
+.pdf-table-compact {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 7pt;
+}
+.pdf-table-compact th,
+.pdf-table-compact td {
+  padding: 3px;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+.pdf-table-compact thead {
+  color: #666;
+  font-size: 6.5pt;
+  font-weight: 700;
+}
+.ddjj-grid-3x3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px 12px;
+  font-size: 6pt;
+}
+
+.total-line {
+  font-size: 11pt;
+  margin-top: 15px;
+  text-align: right;
+}
+.pdf-footer {
+  position: absolute;
+  left: 10mm;
+  right: 10mm;
+  display: flex;
+  justify-content: space-between;
+  font-size: 7.5pt;
+  color: #555;
+}
+.pdf-signature-line {
+  position: absolute;
+  left: 10mm;
+  right: 10mm;
+  border-top: 1px solid #333;
+  padding-top: 2px;
+  text-align: center;
+  font-size: 8pt;
+  font-weight: bold;
+}
