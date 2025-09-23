@@ -39,6 +39,7 @@ const corsOptions = {
   allowedHeaders: ["Content-Type", "Authorization"],
   exposedHeaders: ["Content-Disposition"],
 };
+app.options("*", cors(corsOptions));
 app.use(cors(corsOptions));
 app.use(express.json({ limit: "5mb" }));
 
