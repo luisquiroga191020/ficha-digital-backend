@@ -8,10 +8,6 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const cloudinary = require("cloudinary").v2;
 const multer = require("multer");
-const puppeteer = require("puppeteer");
-const handlebars = require("handlebars");
-const fs = require("fs").promises;
-const path = require("path");
 
 // 2. CONFIGURACIÓN INICIAL
 // -----------------------------------------------------------------------------
@@ -33,17 +29,12 @@ const pool = new Pool({
 
 // 3. MIDDLEWARES
 // -----------------------------------------------------------------------------
-app.use(
-  cors({
-    origin: "*",
-    methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-    allowedHeaders: "Content-Type,Authorization",
-    exposedHeaders: "Content-Disposition",
-    preflightContinue: false,
-    optionsSuccessStatus: 204,
-  })
-);
-
+const corsOptions = {
+  origin: "*",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+app.use(cors(corsOptions));
 app.use(express.json({ limit: "5mb" }));
 
 // 4. LÓGICA DE AUTENTICACIÓN Y AUTORIZACIÓN
@@ -804,78 +795,6 @@ app.post(
     }
   }
 );
-
-// --- ENDPOINT PARA GENERAR PDF DE UNA AFILIACIÓN ---
-app.get("/api/affiliations/:id/pdf", authenticateToken, async (req, res) => {
-  let browser = null;
-  try {
-    const { id } = req.params;
-
-    // 1. OBTENER DATOS DE LA AFILIACIÓN (similar al GET de detalles)
-    const result = await pool.query(
-      "SELECT * FROM affiliations WHERE id = $1",
-      [id]
-    );
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Afiliación no encontrada." });
-    }
-    const affiliationData = {
-      ...result.rows[0].form_data, // Datos del JSON
-      ...result.rows[0], // Datos de las columnas principales
-    };
-
-    // (Lógica para obtener nombre del promotor, etc., si es necesario)
-
-    // 2. LEER Y COMPILAR LA PLANTILLA
-    const templateHtmlPath = path.join(
-      __dirname,
-      "templates",
-      "afiliacion.hbs"
-    );
-    const stylesCssPath = path.join(__dirname, "templates", "styles.css");
-
-    const templateHtml = await fs.readFile(templateHtmlPath, "utf8");
-    const cssContent = await fs.readFile(stylesCssPath, "utf8");
-
-    const template = handlebars.compile(templateHtml);
-
-    // Añadimos el CSS al objeto de datos para que se inyecte en la plantilla
-    const dataForPdf = { ...affiliationData, cssContent: cssContent };
-
-    const finalHtml = template(dataForPdf);
-
-    // 3. LANZAR PUPPETEER Y GENERAR PDF
-    browser = await puppeteer.launch({
-      args: ["--no-sandbox", "--disable-setuid-sandbox"], // Necesario para correr en Render
-    });
-    const page = await browser.newPage();
-
-    // Establecemos el contenido de la página
-    await page.setContent(finalHtml, { waitUntil: "networkidle0" });
-
-    const pdfBuffer = await page.pdf({
-      format: "A4",
-      printBackground: true,
-      margin: { top: "10mm", right: "10mm", bottom: "10mm", left: "10mm" },
-    });
-
-    // 4. ENVIAR PDF AL CLIENTE
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=solicitud-${affiliationData.solicitud || id}.pdf`
-    );
-    res.send(pdfBuffer);
-  } catch (error) {
-    console.error("Error al generar el PDF:", error);
-    res.status(500).json({ message: "No se pudo generar el PDF." });
-  } finally {
-    // Asegurarnos de cerrar el navegador SIEMPRE
-    if (browser) {
-      await browser.close();
-    }
-  }
-});
 
 // --- DATOS MAESTROS ---
 
