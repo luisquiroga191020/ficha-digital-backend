@@ -1,201 +1,120 @@
-<!DOCTYPE html>
 <html>
-<head>
-    <meta charset="UTF-8">
+  <head>
+    <meta charset="UTF-8" />
     <style>
-        /* Aquí pegaremos el contenido de styles.css con código */
-        {{{ cssContent }}}
+      {{{cssContent}}}
     </style>
-</head>
-<body>
-                                  <div v-if="selectedAffiliationData && isGeneratingPdf" id="pdf-container">
-                                      <!-- PÁGINA 1 -->
-                                      <div id="pdf-page-1" class="pdf-page">
-                                          <!-- Encabezado -->
-                                          <div class="pdf-header">
-                                              <img src="iconPieve.png" style="height: 35px;" />
-                                              <div class="header-details">
-                                                  <div><span class="data">{{ selectedAffiliationData.titulo }}</span></div>
-                                                  <div><span class="data">{{ selectedAffiliationData.plan }} - {{ selectedAffiliationData.operacion }}</span></div>
-                                              </div>
-                                          </div>
-                                          <div class="pdf-subheader">
-                                              <span><span class="label">N° de Solicitud: </span><span class="data">{{ selectedAffiliationData.solicitud }}</span></span>
-                                              <span><span class="label">N° de Afiliado: ........................</span></span>
-                                          </div>
+  </head>
+  <body>
+    <!-- PÁGINA 1 -->
+    <div id="pdf-page-1" class="pdf-page">
+      <!-- Encabezado -->
+      <div class="pdf-header">
+        <img
+          src="https://res.cloudinary.com/dmr1j8icx/image/upload/v1758629428/iconPieve_qpnsss.png"
+          style="height: 35px;"
+        />
+        <div class="header-details">
+          <div><span class="data">{{titulo}}</span></div>
+          <div><span class="data">{{plan}} - {{operacion}}</span></div>
+        </div>
+      </div>
+      <div class="pdf-subheader">
+        <span><span class="label">N° de Solicitud: </span><span
+            class="data"
+          >{{solicitud}}</span></span>
+        <span><span class="label">N° de Afiliado: ........................</span></span>
+      </div>
 
-                                          <!-- DATOS DEL TITULAR -->
-                                          <div class="pdf-section">
-                                              <div class="pdf-section-title">DATOS DEL TITULAR</div>
-                                              <div class="pdf-data-fluid">
-                                                  <span class="pdf-data-item"><span class="label">Apellidos y nombres:</span><span class="data">{{ selectedAffiliationData.apellidoTitular }}, {{ selectedAffiliationData.nombreTitular }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">N° de documento:</span><span class="data">{{ selectedAffiliationData.dniTitular }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Cuit/Cuil:</span><span class="data">{{ selectedAffiliationData.cuilTitular }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Sexo:</span><span class="data">{{ selectedAffiliationData.sexoTitular }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Fecha de nacimiento:</span><span class="data">{{ selectedAffiliationData.fechaNacimientoTitular }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Edad:</span><span class="data">{{ selectedAffiliationData.edadTitular }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Lugar de nacimiento:</span><span class="data">{{ selectedAffiliationData.lugarNacimientoTitular }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Nacionalidad:</span><span class="data">{{ selectedAffiliationData.nacionalidadTitular }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Estado civil:</span><span class="data">{{ selectedAffiliationData.estadoCivilTitular }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Domicilio:</span><span class="data">{{ selectedAffiliationData.barrioTitular }}, {{ selectedAffiliationData.domicilioTitular }}, {{ selectedAffiliationData.localidadTitular }}, {{ selectedAffiliationData.provinciaTitular }} ({{ selectedAffiliationData.cpTitular }})</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Teléfono:</span><span class="data">{{ selectedAffiliationData.telefonoTitular }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Email:</span><span class="data">{{ selectedAffiliationData.emailTitular }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Actividad laboral:</span><span class="data">{{ selectedAffiliationData.actividadLaboralTitular }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Condición IVA:</span><span class="data">{{ selectedAffiliationData.condicionIVATitular }}</span></span>
-                                              </div>
-                                          </div>
+      <!-- DATOS DEL TITULAR -->
+      <div class="pdf-section">
+        <div class="pdf-section-title">DATOS DEL TITULAR</div>
+        <div class="pdf-data-fluid">
+          <span class="pdf-data-item"><span class="label">Apellidos y nombres:</span><span
+              class="data"
+            >{{apellidoTitular}}, {{nombreTitular}}</span></span>
+          <span class="pdf-data-item"><span class="label">N° de documento:</span><span
+              class="data"
+            >{{dniTitular}}</span></span>
+          <span class="pdf-data-item"><span class="label">Cuit/Cuil:</span><span
+              class="data"
+            >{{cuilTitular}}</span></span>
+        </div>
+      </div>
 
-                                          <!-- DATOS DEL RESPONSABLE DE PAGO -->
-                                          <div class="pdf-section">
-                                              <div class="pdf-section-title">DATOS DEL RESPONSABLE DE PAGO</div>
-                                              <div class="pdf-data-fluid">
-                                                  <span class="pdf-data-item"><span class="label">Apellidos y nombres:</span><span class="data">{{ selectedAffiliationData.apellidoResponsablePago }}, {{ selectedAffiliationData.nombreResponsablePago }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">N° de documento:</span><span class="data">{{ selectedAffiliationData.dniResponsablePago }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Cuit/Cuil:</span><span class="data">{{ selectedAffiliationData.cuilResponsablePago }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Sexo:</span><span class="data">{{ selectedAffiliationData.sexoResponsablePago }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Fecha de nacimiento:</span><span class="data">{{ selectedAffiliationData.fechaNacimientoResponsablePago }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Lugar de nacimiento:</span><span class="data">{{ selectedAffiliationData.lugarNacimientoResponsablePago }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Nacionalidad:</span><span class="data">{{ selectedAffiliationData.nacionalidadResponsablePago }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Estado civil:</span><span class="data">{{ selectedAffiliationData.estadoCivilResponsablePago }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Domicilio:</span><span class="data">{{ selectedAffiliationData.barrioResponsablePago }}, {{ selectedAffiliationData.domicilioResponsablePago }}, {{ selectedAffiliationData.localidadResponsablePago }} ({{ selectedAffiliationData.cpResponsablePago }})</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Teléfono:</span><span class="data">{{ selectedAffiliationData.telefonoResponsablePago }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Email:</span><span class="data">{{ selectedAffiliationData.emailResponsablePago }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Actividad laboral:</span><span class="data">{{ selectedAffiliationData.actividadLaboralResponsablePago }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Condición IVA:</span><span class="data">{{ selectedAffiliationData.condicionIVAResponsablePago }}</span></span>
-                                              </div>
-                                          </div>
+      <!-- DATOS DEL RESPONSABLE DE PAGO -->
+      {{#if dniResponsablePago}}
+        <div class="pdf-section">
+          <div class="pdf-section-title">DATOS DEL RESPONSABLE DE PAGO</div>
+          <div class="pdf-data-fluid">
+            <span class="pdf-data-item"><span class="label">Apellidos y nombres:</span><span
+                class="data"
+              >{{apellidoResponsablePago}},
+                {{nombreResponsablePago}}</span></span>
+          </div>
+        </div>
+      {{/if}}
 
-                                          <!-- DATOS DEL CÓNYUGE -->
-                                          <div class="pdf-section">
-                                              <div class="pdf-section-title">DATOS DEL CÓNYUGE</div>
-                                              <div class="pdf-data-fluid">
-                                                  <span class="pdf-data-item"><span class="label">Apellidos y nombres:</span><span class="data">{{ selectedAffiliationData.apellidoConyuge }}, {{ selectedAffiliationData.nombreConyuge }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">N° de documento:</span><span class="data">{{ selectedAffiliationData.dniConyuge }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Cuit/Cuil:</span><span class="data">{{ selectedAffiliationData.cuilConyuge }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Sexo:</span><span class="data">{{ selectedAffiliationData.sexoConyuge }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Fecha de nacimiento:</span><span class="data">{{ selectedAffiliationData.fechaNacimientoConyuge }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Nacionalidad:</span><span class="data">{{ selectedAffiliationData.nacionalidadConyuge }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Actividad laboral:</span><span class="data">{{ selectedAffiliationData.actividadLaboralConyuge }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Condición IVA:</span><span class="data">{{ selectedAffiliationData.condicionIVAConyuge }}</span></span>
-                                              </div>
-                                          </div>
+      <!-- INTEGRANTES -->
+      <div class="pdf-section">
+        <div class="pdf-section-title">Integrantes del Grupo Familiar</div>
+        <table class="pdf-table-compact">
+          <thead>
+            <tr>
+              <th>Apellidos y Nombres</th>
+              <th>Sexo</th>
+              <th>Fecha de nac.</th>
+              <th>Edad</th>
+              <th>Cuit/Cuil</th>
+              <th>Vínculo</th>
+              <th>Cuota Mensual</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each integrantesList}}
+              <tr>
+                <td>{{this.apellidos}}, {{this.nombres}}</td>
+                <td>{{this.sexo}}</td>
+                <td>{{this.fechaNacimiento}}</td>
+                <td>{{this.edad}}</td>
+                <td>{{this.cuitCuil}}</td>
+                <td>{{this.vinculo}}</td>
+                <td>$ {{this.cuotaMensual}}</td>
+              </tr>
+            {{/each}}
 
-                                          <!-- DATOS DEL PAGO -->
-                                          <div class="pdf-section">
-                                              <div class="pdf-section-title">DATOS DEL PAGO</div>
-                                              <div class="pdf-data-fluid">
-                                                  <span class="pdf-data-item"><span class="label">Forma de pago:</span><span class="data">{{ selectedAffiliationData.formaPago }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Acuerdo:</span><span class="data">{{ selectedAffiliationData.acuerdo }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Medio de pago:</span><span class="data">{{ selectedAffiliationData.medioPago }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Empresa:</span><span class="data">{{ selectedAffiliationData.empresa }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">CBU / N° Cuenta:</span><span class="data">{{ selectedAffiliationData.cbu }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">N° de tarjeta:</span><span class="data">{{ selectedAffiliationData.tarjeta }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Vencimiento:</span><span class="data">{{ selectedAffiliationData.vencimiento }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Lugar de pago:</span><span class="data">{{ selectedAffiliationData.lugarPago }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Domicilio de pago:</span><span class="data">{{ selectedAffiliationData.domicilioPago }}, {{ selectedAffiliationData.barrioPago }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Zona:</span><span class="data">{{ selectedAffiliationData.zonaPago }}</span></span>
-                                              </div>
-                                          </div>
+            {{#unless integrantesList}}
+              <tr>
+                <td colspan="7" style="text-align: center; color: #888;">- Sin
+                  integrantes en el grupo familiar -</td>
+              </tr>
+            {{/unless}}
+          </tbody>
+        </table>
+      </div>
 
-                                          <!-- BENEFICIARIO POR FALLECIMIENTO -->
-                                          <div class="pdf-section">
-                                              <div class="pdf-section-title">BENEFICIARIO POR FALLECIMIENTO</div>
-                                              <div class="pdf-data-fluid">
-                                                  <span class="pdf-data-item"><span class="label">Apellidos y Nombres:</span><span class="data">{{ selectedAffiliationData.apellidoBeneficiario }}, {{ selectedAffiliationData.nombreBeneficiario }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Sexo:</span><span class="data">{{ selectedAffiliationData.sexoBeneficiario }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Fecha de nacimiento:</span><span class="data">{{ selectedAffiliationData.fechaNacimientoBeneficiario }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Cuit/Cuil:</span><span class="data">{{ selectedAffiliationData.cuilBeneficiario }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Vínculo:</span><span class="data">{{ selectedAffiliationData.vinculoBeneficiario }}</span></span>
-                                              </div>
-                                          </div>
+      <p class="total-line">
+        <span class="label">Total Mensual: </span><span class="data">$
+          {{total}}</span>
+      </p>
 
-                                          <!-- DECLARACIÓN JURADA DE SALUD -->
-                                          <div class="pdf-section">
-                                              <div class="pdf-section-title">DECLARACIÓN JURADA DE SALUD</div>
-                                              <p class="pdf-data-fluid" style="font-size: 7pt; text-align: justify; margin-bottom: 5px;"><span class="pdf-data-item" style="white-space: normal;"><span class="label">El que suscribe la presente, declara bajo juramento que las respuestas que se consigan a continuación y sus ampliaciones y declaraciones, han sido completadas teniendo pleno conocimiento de que cualquier ocultamiento, falsedad o reticencia sobre su verdadero estado de salud o el de su grupo familiar, determinará que la afiliación sea nula.</span></span></p>
-                                              <div class="ddjj-grid-3x3">
-                                                  <span class="pdf-data-item"><span class="label">1. ¿Buen estado de salud?</span><span class="data">{{ selectedAffiliationData.ddjj1 }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">2. ¿Dificultad en tareas?</span><span class="data">{{ selectedAffiliationData.ddjj2 }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">3a. Cardiovasculares</span><span class="data">{{ selectedAffiliationData.ddjj4 }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">3b. Broncopulmonares</span><span class="data">{{ selectedAffiliationData.ddjj5 }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">3c. Hipertensión</span><span class="data">{{ selectedAffiliationData.ddjj6 }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">3d. Diabetes</span><span class="data">{{ selectedAffiliationData.ddjj7 }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">3e. Malignas (Cáncer)</span><span class="data">{{ selectedAffiliationData.ddjj8 }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">3f. Inmunodeficiencia</span><span class="data">{{ selectedAffiliationData.ddjj9 }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">3g. Convulsiones</span><span class="data">{{ selectedAffiliationData.ddjj10 }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">3h. Mal de Chagas</span><span class="data">{{ selectedAffiliationData.ddjj11 }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">3i. Otras</span><span class="data">{{ selectedAffiliationData.ddjj12 }}</span></span>
-                                              </div>
-                                              <div class="pdf-data-fluid" style="margin-top: 5px;">
-                                                  <span class="pdf-data-item"><span class="label">4. ¿Defecto físico o discapacidad?</span><span class="data">{{ selectedAffiliationData.ddjj13 }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">5. ¿Internado últimos 24 meses?</span><span class="data">{{ selectedAffiliationData.ddjj14 }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">6. ¿Operación últimos 24 meses?</span><span class="data">{{ selectedAffiliationData.ddjj15 }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">7. ¿Toma medicación regular?</span><span class="data">{{ selectedAffiliationData.ddjj16 }}</span></span>
-                                                  <span class="pdf-data-item"><span class="label">Cantidad de anexos:</span><span class="data">{{ selectedAffiliationData.anexo || 0 }}</span></span>
-                                              </div>
-                                          </div>
+      <div class="pdf-footer">
+        <span><span class="label">Promotor:</span><span
+            class="data"
+          >{{creatorUserName}}</span></span>
+        <span><span class="label">Salta,</span><span
+            class="data"
+          >{{fechaGeneracion}}</span></span>
+        <span class="data">SOLICITUD SUJETA A APROBACIÓN</span>
+      </div>
+      <div class="pdf-signature-line">
+        FIRMA Y ACLARACIÓN DEL TIT. O RESP. FRENTE Y DORSO
+      </div>
+    </div>
 
-                                          <!-- DISPOSICIONES Y PEP -->
-                                          <div class="pdf-section">
-                                              <div class="pdf-section-title">Disposiciones y Declaraciones Adicionales</div>
-                                              <p class="pdf-data-fluid" style="font-size: 7pt; text-align: justify; margin-bottom: 5px;"><span class="pdf-data-item" style="white-space: normal;"><span class="label"><b>RETICENCIA O FALSA DECLARACIÓN:</b> Declaro y certifico que los datos consignados son exactos. Toda declaración falsa o reticencia de circunstancias conocidas, aún hechas de buena fe, que a juicio de peritos hubiese impedido el contrato o modificado sus condiciones, hace nulo el contrato (art. 5°, Ley 17.418).</span></span></p>
-                                              <p class="pdf-data-fluid" style="font-size: 7pt; text-align: justify;"><span class="pdf-data-item" style="white-space: normal;"><span class="label"><b>PERSONA EXPUESTA POLÍTICAMENTE:</b> Declaro bajo juramento que <span class="data">{{ selectedAffiliationData.pep }}</span> me encuentro incluido/a dentro de la Nómina de Personas Expuestas Políticamente (Resolución UIF N° 52/2012) y que la licitud de los fondos se relaciona a esta operación (R 230/2011 de la UIF).</span></span></p>
-                                          </div>
-
-                                          <!-- INTEGRANTES -->
-                                          <div class="pdf-section">
-                                              <div class="pdf-section-title">Integrantes del Grupo Familiar</div>
-                                              <table class="pdf-table-compact">
-                                                  <thead>
-                                                      <tr>
-                                                          <th>Apellidos y Nombres</th>
-                                                          <th>Sexo</th>
-                                                          <th>Fecha de nac.</th>
-                                                          <th>Edad</th>
-                                                          <th>Cuit/Cuil</th>
-                                                          <th>Vínculo</th>
-                                                          <th>Cuota Mensual</th>
-                                                      </tr>
-                                                  </thead>
-                                                  <tbody>
-                                                      <tr v-if="selectedAffiliationData.integrantesList && selectedAffiliationData.integrantesList.length > 0" v-for="p in selectedAffiliationData.integrantesList" :key="p.cuitCuil">
-                                                          <td>{{ p.apellidos }}, {{ p.nombres }}</td>
-                                                          <td>{{ p.sexo }}</td>
-                                                          <td>{{ p.fechaNacimiento }}</td>
-                                                          <td>{{ p.edad }}</td>
-                                                          <td>{{ p.cuitCuil }}</td>
-                                                          <td>{{ p.vinculo }}</td>
-                                                          <td>$ {{ parseInt(p.cuotaMensual || 0) }}</td>
-                                                      </tr>
-                                                      <tr v-else>
-                                                          <td colspan="7" style="text-align: center; color: #888;">- Sin integrantes en el grupo familiar -</td>
-                                                      </tr>
-                                                  </tbody>
-                                              </table>
-                                          </div>
-
-                                          <p class="total-line">
-                                              <span class="label">Total Mensual: </span><span class="data">$ {{ parseInt(selectedAffiliationData.total || 0) }}</span>
-                                          </p>
-
-                                          <div class="pdf-footer">
-                                              <span><span class="label">Promotor:</span><span class="data">{{ selectedAffiliationData.generadoPor || selectedAffiliationData.creatorUserName }}</span></span>
-                                              <span><span class="label">Salta,</span><span class="data">{{ selectedAffiliationData.fechaGeneracion || new Date().toLocaleDateString('es-AR') }}</span></span>
-                                              <span class="data">SOLICITUD SUJETA A APROBACIÓN</span>
-                                          </div>
-                                          <div class="pdf-signature-line">
-                                              FIRMA Y ACLARACIÓN DEL TIT. O RESP. FRENTE Y DORSO
-                                          </div>
-                                      </div>
-
-                                      <!-- PÁGINA 2 -->
-                                      <div id="pdf-page-2" class="pdf-page">
-                                          <!-- (Aquí puedes añadir el contenido de la Página 2, como las Condiciones Generales) -->
-                                          <div class="pdf-section">
-                                              <div class="pdf-section-title">CONDICIONES GENERALES</div>
-                                              <p class="pdf-data-fluid" style="font-size: 7pt; text-align: justify;"><span class="pdf-data-item" style="white-space: normal;"><span class="label">Aquí iría todo el texto de las condiciones generales, como se lista en la imagen que me pasaste.</span></span></p>
-                                          </div>
-                                      </div>
-                                  </div>
-</body>
+    <!-- PÁGINA 2 -->
+    <div id="pdf-page-2" class="pdf-page">
+      <!-- ... -->
+    </div>
+  </body>
 </html>
