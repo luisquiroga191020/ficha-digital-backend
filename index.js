@@ -643,52 +643,6 @@ app.post(
   }
 );
 
-// --- ENDPOINT PARA GENERAR PDF USANDO APPS SCRIPT ---
-app.get("/api/affiliations/:id/pdf", authenticateToken, async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    // 1. Obtener datos de la afiliación desde nuestra base de datos
-    const result = await pool.query(
-      "SELECT a.*, u.full_name as generated_by_name FROM affiliations a JOIN users u ON a.user_id = u.id WHERE a.id = $1",
-      [id]
-    );
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Afiliación no encontrada." });
-    }
-
-    // 2. Preparar el objeto de datos para enviar a Apps Script
-    const affiliationData = {
-      ...result.rows[0].form_data, // Datos del JSON (nombreTitular, etc.)
-      solicitud: result.rows[0].form_data.solicitud,
-      generadoPor: result.rows[0].generated_by_name, // Usamos el nombre del vendedor
-    };
-
-    // 3. Hacer la llamada POST a la URL de tu Apps Script
-    const scriptResponse = await axios.post(
-      process.env.APPS_SCRIPT_URL,
-      affiliationData,
-      { headers: { "Content-Type": "application/json" } }
-    );
-
-    // 4. Comprobar si Apps Script tuvo éxito
-    if (scriptResponse.data && scriptResponse.data.status === "SUCCESS") {
-      // 5. Enviar la URL del PDF de vuelta al frontend
-      res.json({ pdfUrl: scriptResponse.data.pdfUrl });
-    } else {
-      // Si Apps Script devolvió un error, lo registramos y lo notificamos
-      console.error(
-        "Error devuelto por Apps Script:",
-        scriptResponse.data.message
-      );
-      throw new Error("El servicio de generación de PDF falló.");
-    }
-  } catch (error) {
-    console.error("Error al contactar el servicio de PDF:", error.message);
-    res.status(500).json({ message: "No se pudo generar el PDF." });
-  }
-});
-
 // ENDPOINT PARA LOS DATOS DEL DASHBOARD
 
 app.post(
