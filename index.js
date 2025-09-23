@@ -487,6 +487,8 @@ app.get("/api/affiliations/:id", authenticateToken, async (req, res) => {
         .json({ message: "Afiliación no encontrada o sin permiso." });
     }
 
+    const dbRow = result.rows[0];
+
     const fotosResult = await pool.query(
       "SELECT id, public_id, descripcion, fecha_subida FROM afiliacion_fotos WHERE afiliacion_id = $1 ORDER BY fecha_subida DESC",
       [id]
@@ -504,28 +506,40 @@ app.get("/api/affiliations/:id", authenticateToken, async (req, res) => {
       };
     });
 
-    const dbRow = result.rows[0];
+    let planDetails = { titulo: null };
+    if (dbRow.form_data && dbRow.form_data.plan) {
+      const planValue = dbRow.form_data.plan;
+      const planResult = await pool.query(
+        "SELECT titulo FROM planes WHERE value = $1",
+        [planValue]
+      );
+      if (planResult.rows.length > 0) {
+        planDetails = planResult.rows[0];
+      }
+    }
 
     const affiliationDetails = {
       ...dbRow.form_data,
+
       id: dbRow.id,
-      solicitud: dbRow.form_data.solicitud,
       latitud: dbRow.latitud,
       longitud: dbRow.longitud,
+      domicilio_latitud: dbRow.domicilio_latitud,
+      domicilio_longitud: dbRow.domicilio_longitud,
       status: dbRow.status,
       statusChangeTimestamp: dbRow.status_change_timestamp,
       statusChangeUserName: dbRow.status_change_user_name,
       rechazoMotivo: dbRow.rechazo_motivo,
       creatorUserName: dbRow.creator_user_name,
       creatorUserCodigo: dbRow.creator_user_codigo,
-      domicilio_latitud: dbRow.domicilio_latitud,
-      domicilio_longitud: dbRow.domicilio_longitud,
+
       fotos: fotosConUrlSegura,
+      titulo: planDetails.titulo,
     };
 
     res.json(affiliationDetails);
   } catch (error) {
-    console.error("Error al obtener detalle:", error);
+    console.error("Error al obtener detalle de la afiliación:", error);
     res.status(500).json({ message: "Error interno del servidor." });
   }
 });
