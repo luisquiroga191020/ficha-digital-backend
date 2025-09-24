@@ -714,9 +714,13 @@ app.get("/api/affiliations/:id/pdf", authenticateToken, async (req, res) => {
 
     // 4. LANZAR PUPPETEER Y GENERAR PDF
     browser = await puppeteer.launch({
-      executablePath: "/usr/bin/google-chrome-stable",
       headless: "new",
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+      ],
     });
     const page = await browser.newPage();
 

@@ -1,25 +1,48 @@
 # Usar la imagen oficial de Node.js 20-slim como base
 FROM node:20-slim
 
-# Instalar dependencias del sistema y herramientas necesarias
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    gnupg \
-    # Limpiar caché al final
-    && rm -rf /var/lib/apt/lists/*
-
-# =================================================================================
-# ===== NUEVO MÉTODO SEGURO PARA AÑADIR EL REPOSITORIO DE GOOGLE CHROME =====
-# =================================================================================
-RUN curl -sS https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome-archive-keyring.gpg \
-    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome-archive-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list
-# =================================================================================
-
-# Instalar Google Chrome y las fuentes, luego limpiar
+# Instalar SOLAMENTE las dependencias de sistema que Chromium necesita para CORRER
 RUN apt-get update \
-    && apt-get install -y google-chrome-stable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-kacst fonts-freefont-ttf libxss1 \
-    --no-install-recommends \
-    && rm -rf /var/lib/apt/lists/*
+  && apt-get install -y \
+  ca-certificates \
+  fonts-liberation \
+  libasound2 \
+  libatk-bridge2.0-0 \
+  libatk1.0-0 \
+  libcairo2 \
+  libcups2 \
+  libdbus-1-3 \
+  libexpat1 \
+  libfontconfig1 \
+  libgbm1 \
+  libgconf-2-4 \
+  libgdk-pixbuf2.0-0 \
+  libglib2.0-0 \
+  libgtk-3-0 \
+  libnspr4 \
+  libnss3 \
+  libpango-1.0-0 \
+  libpangocairo-1.0-0 \
+  libstdc++6 \
+  libx11-6 \
+  libx11-xcb1 \
+  libxcb1 \
+  libxcomposite1 \
+  libxcursor1 \
+  libxdamage1 \
+  libxext6 \
+  libxfixes3 \
+  libxi6 \
+  libxrandr2 \
+  libxrender1 \
+  libxss1 \
+  libxtst6 \
+  lsb-release \
+  wget \
+  xdg-utils \
+  --no-install-recommends \
+  # Limpiar la caché de apt
+  && rm -rf /var/lib/apt/lists/*
 
 # Establecer el directorio de trabajo
 WORKDIR /usr/src/app
@@ -27,10 +50,7 @@ WORKDIR /usr/src/app
 # Copiar los archivos de dependencias
 COPY package*.json ./
 
-# Instalar las dependencias del proyecto de Node.js
-# Usamos PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true para evitar que npm descargue Chrome,
-# ya que lo estamos instalando manualmente con apt-get.
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+# Instalar las dependencias. Esta vez, npm SÍ descargará su propio Chromium.
 RUN npm install
 
 # Copiar el resto del código
