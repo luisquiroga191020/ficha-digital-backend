@@ -8,7 +8,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const cloudinary = require("cloudinary").v2;
 const multer = require("multer");
-const puppeteer = require('puppeteer');
+const puppeteer = require("puppeteer");
 const handlebars = require("handlebars");
 const fs = require("fs").promises;
 const path = require("path");
@@ -713,14 +713,11 @@ app.get("/api/affiliations/:id/pdf", authenticateToken, async (req, res) => {
     const finalHtml = template({ ...affiliationData, cssContent: cssContent });
 
     // 4. LANZAR PUPPETEER Y GENERAR PDF
-browser = await puppeteer.launch({
-    executablePath: '/usr/bin/google-chrome-stable',
-    headless: "new",
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox'
-    ]
-});
+    browser = await puppeteer.launch({
+      executablePath: "/usr/bin/google-chrome-stable",
+      headless: "new",
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
     const page = await browser.newPage();
 
     await page.setContent(finalHtml, { waitUntil: "networkidle0" });
