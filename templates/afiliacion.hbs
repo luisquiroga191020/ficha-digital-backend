@@ -7,31 +7,185 @@
     </style>
 </head>
 <body>
+    <!-- PÁGINA 1 -->
     <div id="pdf-page-1" class="pdf-page">
+        <!-- Encabezado -->
         <div class="pdf-header">
-            <!--<img src="https://res.cloudinary.com/dmr1j8icx/image/upload/v1758629428/iconPieve_qpnsss.png" style="height: 40px;" /> -->
+            <img src="URL_PUBLICA_LOGO_SEPELIOS" style="height: 40px;" />
             <div class="header-details">
                 <div><span class="data">{{ titulo }}</span></div>
                 <div><span class="data header-details-plan">{{ plan }}</span></div>
                 <div><span class="data">{{ operacion }}</span></div>
             </div>
-            <!--<img src="https://res.cloudinary.com/dmr1j8icx/image/upload/v1758629428/iconPieve_qpnsss.png" style="height: 40px;" />-->
+            <img src="URL_PUBLICA_LOGO_SALUD" style="height: 40px;" />
         </div>
         <div class="pdf-subheader">
             <span><span class="label">N° de Solicitud: </span><span class="data">{{ solicitud }}</span></span>
             <span><span class="label">N° de Afiliado: ..............................</span></span>
         </div>
+
+        <!-- DATOS DEL TITULAR -->
         <div class="pdf-section">
             <div class="pdf-section-title">DATOS DEL TITULAR</div>
             <div class="pdf-data-fluid">
                 <span class="pdf-data-item"><span class="label">Apellidos y nombres:</span><span class="data">{{ apellidoTitular }}, {{ nombreTitular }}</span></span>
                 <span class="pdf-data-item"><span class="label">N° de documento:</span><span class="data">{{ dniTitular }}</span></span>
                 <span class="pdf-data-item"><span class="label">Cuit/Cuil:</span><span class="data">{{ cuilTitular }}</span></span>
-                <!-- ... (resto de los campos del titular) ... -->
+                <span class="pdf-data-item"><span class="label">Sexo:</span><span class="data">{{ sexoTitular }}</span></span>
+                <span class="pdf-data-item"><span class="label">Fecha de nacimiento:</span><span class="data">{{ fechaNacimientoTitular }}</span></span>
+                <span class="pdf-data-item"><span class="label">Edad:</span><span class="data">{{ edadTitular }}</span></span>
+                <span class="pdf-data-item"><span class="label">Lugar de nacimiento:</span><span class="data">{{ lugarNacimientoTitular }}</span></span>
+                <span class="pdf-data-item"><span class="label">Nacionalidad:</span><span class="data">{{ nacionalidadTitular }}</span></span>
+                <span class="pdf-data-item"><span class="label">Estado civil:</span><span class="data">{{ estadoCivilTitular }}</span></span>
+                <span class="pdf-data-item"><span class="label">Domicilio:</span><span class="data">{{ barrioTitular }}, {{ domicilioTitular }}, {{ localidadTitular }}, {{ provinciaTitular }} ({{ cpTitular }})</span></span>
+                <span class="pdf-data-item"><span class="label">Teléfono:</span><span class="data">{{ telefonoTitular }}</span></span>
+                <span class="pdf-data-item"><span class="label">Email:</span><span class="data">{{ emailTitular }}</span></span>
+                <span class="pdf-data-item"><span class="label">Actividad laboral:</span><span class="data">{{ actividadLaboralTitular }}</span></span>
+                <span class="pdf-data-item"><span class="label">Condición IVA:</span><span class="data">{{ condicionIVATitular }}</span></span>
             </div>
         </div>
-        <!-- (Añade el resto de las secciones HTML completas aquí, traducidas a Handlebars) -->
-         <div class="pdf-footer">SOLICITUD SUJETA A APROBACIÓN</div>
+
+        <!-- DATOS DEL RESPONSABLE DE PAGO -->
+        {{#if dniResponsablePago}}
+        <div class="pdf-section">
+            <div class="pdf-section-title">DATOS DEL RESPONSABLE DE PAGO</div>
+            <div class="pdf-data-fluid">
+                <span class="pdf-data-item"><span class="label">Apellidos y nombres:</span><span class="data">{{ apellidoResponsablePago }}, {{ nombreResponsablePago }}</span></span>
+                <span class="pdf-data-item"><span class="label">N° de documento:</span><span class="data">{{ dniResponsablePago }}</span></span>
+                <span class="pdf-data-item"><span class="label">Cuit/Cuil:</span><span class="data">{{ cuilResponsablePago }}</span></span>
+                <span class="pdf-data-item"><span class="label">Sexo:</span><span class="data">{{ sexoResponsablePago }}</span></span>
+                <span class="pdf-data-item"><span class="label">Fecha de nacimiento:</span><span class="data">{{ fechaNacimientoResponsablePago }}</span></span>
+                <span class="pdf-data-item"><span class="label">Lugar de nacimiento:</span><span class="data">{{ lugarNacimientoResponsablePago }}</span></span>
+                <span class="pdf-data-item"><span class="label">Nacionalidad:</span><span class="data">{{ nacionalidadResponsablePago }}</span></span>
+                <span class="pdf-data-item"><span class="label">Estado civil:</span><span class="data">{{ estadoCivilResponsablePago }}</span></span>
+                <span class="pdf-data-item"><span class="label">Domicilio:</span><span class="data">{{ barrioResponsablePago }}, {{ domicilioResponsablePago }}, {{ localidadResponsablePago }} ({{ cpResponsablePago }})</span></span>
+                <span class="pdf-data-item"><span class="label">Teléfono:</span><span class="data">{{ telefonoResponsablePago }}</span></span>
+                <span class="pdf-data-item"><span class="label">Email:</span><span class="data">{{ emailResponsablePago }}</span></span>
+                <span class="pdf-data-item"><span class="label">Actividad laboral:</span><span class="data">{{ actividadLaboralResponsablePago }}</span></span>
+                <span class="pdf-data-item"><span class="label">Condición IVA:</span><span class="data">{{ condicionIVAResponsablePago }}</span></span>
+            </div>
+        </div>
+        {{/if}}
+
+        <!-- DATOS DEL CÓNYUGE -->
+        {{#if dniConyuge}}
+        <div class="pdf-section">
+            <div class="pdf-section-title">DATOS DEL CÓNYUGE</div>
+            <div class="pdf-data-fluid">
+                <span class="pdf-data-item"><span class="label">Apellidos y nombres:</span><span class="data">{{ apellidoConyuge }}, {{ nombreConyuge }}</span></span>
+                <span class="pdf-data-item"><span class="label">N° de documento:</span><span class="data">{{ dniConyuge }}</span></span>
+                <span class="pdf-data-item"><span class="label">Cuit/Cuil:</span><span class="data">{{ cuilConyuge }}</span></span>
+                <span class="pdf-data-item"><span class="label">Sexo:</span><span class="data">{{ sexoConyuge }}</span></span>
+                <span class="pdf-data-item"><span class="label">Fecha de nacimiento:</span><span class="data">{{ fechaNacimientoConyuge }}</span></span>
+                <span class="pdf-data-item"><span class="label">Nacionalidad:</span><span class="data">{{ nacionalidadConyuge }}</span></span>
+                <span class="pdf-data-item"><span class="label">Actividad laboral:</span><span class="data">{{ actividadLaboralConyuge }}</span></span>
+                <span class="pdf-data-item"><span class="label">Condición IVA:</span><span class="data">{{ condicionIVAConyuge }}</span></span>
+            </div>
+        </div>
+        {{/if}}
+
+        <!-- DATOS DEL PAGO -->
+        <div class="pdf-section">
+            <div class="pdf-section-title">DATOS DEL PAGO</div>
+            <div class="pdf-data-fluid">
+                <span class="pdf-data-item"><span class="label">Forma de pago:</span><span class="data">{{ formaPago }}</span></span>
+                <span class="pdf-data-item"><span class="label">Acuerdo:</span><span class="data">{{ acuerdo }}</span></span>
+                <span class="pdf-data-item"><span class="label">Medio de pago:</span><span class="data">{{ medioPago }}</span></span>
+                <span class="pdf-data-item"><span class="label">Empresa:</span><span class="data">{{ empresa }}</span></span>
+                <span class="pdf-data-item"><span class="label">CBU / N° Cuenta:</span><span class="data">{{ cbu }}</span></span>
+                <span class="pdf-data-item"><span class="label">N° de tarjeta:</span><span class="data">{{ tarjeta }}</span></span>
+                <span class="pdf-data-item"><span class="label">Vencimiento:</span><span class="data">{{ vencimiento }}</span></span>
+                <span class="pdf-data-item"><span class="label">Lugar de pago:</span><span class="data">{{ lugarPago }}</span></span>
+                <span class="pdf-data-item"><span class="label">Domicilio de pago:</span><span class="data">{{ domicilioPago }}, {{ barrioPago }}</span></span>
+                <span class="pdf-data-item"><span class="label">Zona:</span><span class="data">{{ zonaPago }}</span></span>
+            </div>
+        </div>
+
+        <!-- BENEFICIARIO POR FALLECIMIENTO -->
+        {{#if dniBeneficiario}}
+        <div class="pdf-section">
+            <div class="pdf-section-title">BENEFICIARIO POR FALLECIMIENTO</div>
+            <div class="pdf-data-fluid">
+                <span class="pdf-data-item"><span class="label">Apellidos y Nombres:</span><span class="data">{{ apellidoBeneficiario }}, {{ nombreBeneficiario }}</span></span>
+                <span class="pdf-data-item"><span class="label">Sexo:</span><span class="data">{{ sexoBeneficiario }}</span></span>
+                <span class="pdf-data-item"><span class="label">Fecha de nacimiento:</span><span class="data">{{ fechaNacimientoBeneficiario }}</span></span>
+                <span class="pdf-data-item"><span class="label">Cuit/Cuil:</span><span class="data">{{ cuilBeneficiario }}</span></span>
+                <span class="pdf-data-item"><span class="label">Vínculo:</span><span class="data">{{ vinculoBeneficiario }}</span></span>
+            </div>
+        </div>
+        {{/if}}
+
+        <!-- DECLARACIÓN JURADA DE SALUD -->
+        <div class="pdf-section">
+            <div class="pdf-section-title">DECLARACIÓN JURADA DE SALUD</div>
+            <p class="pdf-data-fluid" style="font-size: 7pt; text-align: justify; margin-bottom: 5px;"><span class="pdf-data-item" style="white-space: normal;"><span class="label">El que suscribe la presente...</span></span></p>
+            <div class="ddjj-grid-3x3">
+                <span class="pdf-data-item"><span class="label">1. ¿Buen estado de salud?</span><span class="data">{{ ddjj1 }}</span></span>
+                <span class="pdf-data-item"><span class="label">2. ¿Dificultad en tareas?</span><span class="data">{{ ddjj2 }}</span></span>
+                <span class="pdf-data-item"><span class="label">3a. Cardiovasculares</span><span class="data">{{ ddjj4 }}</span></span>
+                <span class="pdf-data-item"><span class="label">3b. Broncopulmonares</span><span class="data">{{ ddjj5 }}</span></span>
+                <span class="pdf-data-item"><span class="label">3c. Hipertensión</span><span class="data">{{ ddjj6 }}</span></span>
+                <span class="pdf-data-item"><span class="label">3d. Diabetes</span><span class="data">{{ ddjj7 }}</span></span>
+                <span class="pdf-data-item"><span class="label">3e. Malignas (Cáncer)</span><span class="data">{{ ddjj8 }}</span></span>
+                <span class="pdf-data-item"><span class="label">3f. Inmunodeficiencia</span><span class="data">{{ ddjj9 }}</span></span>
+                <span class="pdf-data-item"><span class="label">3g. Convulsiones</span><span class="data">{{ ddjj10 }}</span></span>
+                <span class="pdf-data-item"><span class="label">3h. Mal de Chagas</span><span class="data">{{ ddjj11 }}</span></span>
+                <span class="pdf-data-item"><span class="label">3i. Otras</span><span class="data">{{ ddjj12 }}</span></span>
+            </div>
+            <div class="pdf-data-fluid" style="margin-top: 5px;">
+                <span class="pdf-data-item"><span class="label">4. ¿Defecto físico o discapacidad?</span><span class="data">{{ ddjj13 }}</span></span>
+                <span class="pdf-data-item"><span class="label">5. ¿Internado últimos 24 meses?</span><span class="data">{{ ddjj14 }}</span></span>
+                <span class="pdf-data-item"><span class="label">6. ¿Operación últimos 24 meses?</span><span class="data">{{ ddjj15 }}</span></span>
+                <span class="pdf-data-item"><span class="label">7. ¿Toma medicación regular?</span><span class="data">{{ ddjj16 }}</span></span>
+                <span class="pdf-data-item"><span class="label">Cantidad de anexos:</span><span class="data">{{ anexo }}</span></span>
+            </div>
+        </div>
+
+        <!-- DISPOSICIONES Y PEP -->
+        <div class="pdf-section">
+            <div class="pdf-section-title">Disposiciones y Declaraciones Adicionales</div>
+            <p class="pdf-data-fluid" style="font-size: 7pt; text-align: justify; margin-bottom: 5px;"><span class="pdf-data-item" style="white-space: normal;"><span class="label"><b>RETICENCIA O FALSA DECLARACIÓN:</b> ...</span></span></p>
+            <p class="pdf-data-fluid" style="font-size: 7pt; text-align: justify;"><span class="pdf-data-item" style="white-space: normal;"><span class="label"><b>PERSONA EXPUESTA POLÍTICAMENTE:</b> ... <span class="data">{{ pep }}</span> ...</span></span></p>
+        </div>
+
+        <!-- INTEGRANTES -->
+        <div class="pdf-section">
+            <div class="pdf-section-title">Integrantes del Grupo Familiar</div>
+            <table class="pdf-table-compact">
+                <thead><tr><th>Apellidos y Nombres</th><th>Sexo</th><th>Fecha de nac.</th><th>Edad</th><th>Cuit/Cuil</th><th>Vínculo</th><th>Cuota Mensual</th></tr></thead>
+                <tbody>
+                    {{#each integrantesList}}
+                    <tr>
+                        <td>{{ this.apellidos }}, {{ this.nombres }}</td>
+                        <td>{{ this.sexo }}</td>
+                        <td>{{ this.fechaNacimiento }}</td>
+                        <td>{{ this.edad }}</td>
+                        <td>{{ this.cuitCuil }}</td>
+                        <td>{{ this.vinculo }}</td>
+                        <td>$ {{ this.cuotaMensual }}</td>
+                    </tr>
+                    {{/each}}
+                    {{#unless integrantesList}}
+                    <tr><td colspan="7" style="text-align: center; color: #888;">- Sin integrantes en el grupo familiar -</td></tr>
+                    {{/unless}}
+                </tbody>
+            </table>
+        </div>
+
+        <p class="total-line"><span class="label">Total Mensual: </span><span class="data">$ {{ total }}</span></p>
+        
+        <div class="pdf-line-footer">                                              
+            <span><span class="label">Promotor:</span><span class="data">{{ generadoPor }}</span></span>
+            <span><span class="label">Salta,</span><span class="data">{{ fechaGeneracion }}</span></span>
+            <span class="data pdf-signature-line">Firma y aclaración del titular o resp.</span>
+        </div> 
+        <div class="pdf-footer">SOLICITUD SUJETA A APROBACIÓN</div>                                         
     </div>
+
+    <!-- PÁGINA 2 -->
+    <div id="pdf-page-2" class="pdf-page">
+        <!-- (Aquí puedes añadir el contenido de la Página 2) -->
+    </div>
+</div>
 </body>
 </html>
