@@ -19,6 +19,6 @@
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
     "pg": "^8.16.3",
-    "puppeteer": "^24.22.2"
+    "puppeteer-core": "^24.22.2"
   }
 }

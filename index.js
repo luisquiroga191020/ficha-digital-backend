@@ -8,7 +8,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const cloudinary = require("cloudinary").v2;
 const multer = require("multer");
-const puppeteer = require("puppeteer");
+const puppeteer = require('puppeteer-core');
 const handlebars = require("handlebars");
 const fs = require("fs").promises;
 const path = require("path");
@@ -713,19 +713,21 @@ app.get("/api/affiliations/:id/pdf", authenticateToken, async (req, res) => {
     const finalHtml = template({ ...affiliationData, cssContent: cssContent });
 
     // 4. LANZAR PUPPETEER Y GENERAR PDF
-    browser = await puppeteer.launch({
-      headless: "new", // Modo "headless" recomendado para servidores
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage", // Medida de estabilidad en entornos con memoria limitada
-        "--disable-accelerated-2d-canvas",
-        "--no-first-run",
-        "--no-zygote",
-        "--single-process", // A veces ayuda en entornos Docker
-        "--disable-gpu",
-      ],
-    });
+browser = await puppeteer.launch({
+    // La línea más importante: le dice a puppeteer-core dónde encontrar Chrome.
+    executablePath: '/usr/bin/google-chrome-stable',
+    
+    // El modo "headless" nuevo es el recomendado.
+    headless: "new",
+    
+    // Argumentos esenciales para la estabilidad en entornos Docker/Linux sin interfaz gráfica.
+    args: [
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage', // Previene errores de memoria compartida
+      '--disable-gpu' // No necesitamos aceleración gráfica en el servidor
+    ]
+});
     const page = await browser.newPage();
 
     await page.setContent(finalHtml, { waitUntil: "networkidle0" });
