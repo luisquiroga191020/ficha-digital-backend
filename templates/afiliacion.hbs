@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        {{{ cssContent }}}
+    </style>
+</head>
+<body>
+    <div id="pdf-page-1" class="pdf-page">
+        <div class="pdf-header">
+            <img src="https://res.cloudinary.com/dmr1j8icx/image/upload/v1758629428/iconPieve_qpnsss.png" style="height: 40px;" />
+            <div class="header-details">
+                <div><span class="data">{{ titulo }}</span></div>
+                <div><span class="data header-details-plan">{{ plan }}</span></div>
+                <div><span class="data">{{ operacion }}</span></div>
+            </div>
+            <img src="https://res.cloudinary.com/dmr1j8icx/image/upload/v1758629428/iconPieve_qpnsss.png" style="height: 40px;" />
+        </div>
+        <div class="pdf-subheader">
+            <span><span class="label">N° de Solicitud: </span><span class="data">{{ solicitud }}</span></span>
+            <span><span class="label">N° de Afiliado: ..............................</span></span>
+        </div>
+        <div class="pdf-section">
+            <div class="pdf-section-title">DATOS DEL TITULAR</div>
+            <div class="pdf-data-fluid">
+                <span class="pdf-data-item"><span class="label">Apellidos y nombres:</span><span class="data">{{ apellidoTitular }}, {{ nombreTitular }}</span></span>
+                <span class="pdf-data-item"><span class="label">N° de documento:</span><span class="data">{{ dniTitular }}</span></span>
+                <span class="pdf-data-item"><span class="label">Cuit/Cuil:</span><span class="data">{{ cuilTitular }}</span></span>
+                <!-- ... (resto de los campos del titular) ... -->
+            </div>
+        </div>
+        <!-- (Añade el resto de las secciones HTML completas aquí, traducidas a Handlebars) -->
+         <div class="pdf-footer">SOLICITUD SUJETA A APROBACIÓN</div>
+    </div>
+</body>
+</html>

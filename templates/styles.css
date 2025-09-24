@@ -1,0 +1,129 @@
+/* ESTILOS PDF */
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  color: #000;
+  font-size: 8pt;
+}
+.pdf-page {
+  width: 210mm;
+  min-height: 297mm;
+  padding: 7mm;
+  box-sizing: border-box;
+  position: relative;
+}
+.pdf-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 5px;
+  border-bottom: 2px solid #777;
+}
+.header-details {
+  text-align: center;
+}
+.header-details div {
+  font-size: 10pt;
+  color: #222;
+  line-height: 1.2;
+  font-weight: bold;
+}
+.header-details-plan {
+  font-size: 12pt;
+}
+.pdf-subheader {
+  display: flex;
+  justify-content: space-between;
+  font-size: 8pt;
+  padding: 3px 0;
+  margin-top: 5px;
+  margin-bottom: 5px;
+  color: #333;
+}
+.pdf-section {
+  margin-bottom: 8px;
+}
+.pdf-section-title {
+  color: white;
+  background-color: #999;
+  font-weight: 700;
+  font-size: 8pt;
+  text-align: left;
+  padding: 1px 6px;
+  margin-bottom: 4px;
+  border-radius: 4px;
+}
+.pdf-data-fluid {
+  font-size: 7pt;
+  line-height: 1.5;
+  color: #444;
+  padding-left: 6px;
+}
+.pdf-data-item {
+  display: inline-block;
+  margin-right: 12px;
+  padding-bottom: 2px;
+}
+.pdf-data-item .label {
+  font-weight: normal;
+  color: #555;
+  margin-right: 4px;
+}
+.pdf-data-item .data {
+  font-weight: bold;
+  color: black;
+}
+.pdf-table-compact {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 6.5pt;
+}
+.pdf-table-compact th,
+.pdf-table-compact td {
+  padding: 3px;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+.pdf-table-compact thead {
+  color: #666;
+  font-size: 6.5pt;
+  font-weight: 700;
+}
+.ddjj-grid-3x3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px 12px;
+  font-size: 6pt;
+}
+.total-line {
+  font-size: 11pt;
+  margin-top: 15px;
+  text-align: right;
+}
+.pdf-line-footer {
+  position: absolute;
+  left: 7mm;
+  right: 7mm;
+  bottom: 10mm;
+  display: flex;
+  justify-content: space-between;
+  font-size: 7.5pt;
+  color: #555;
+}
+.pdf-signature-line {
+  width: 30%;
+  border-top: 1px dotted #333;
+  text-align: center;
+  padding-top: 2px;
+}
+.pdf-footer {
+  position: absolute;
+  left: 7mm;
+  right: 7mm;
+  bottom: 3mm;
+  color: white;
+  background-color: #777;
+  text-align: center;
+  font-size: 7pt;
+  font-weight: bold;
+  padding: 2px;
+}

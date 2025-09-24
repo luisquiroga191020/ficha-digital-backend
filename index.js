@@ -8,6 +8,10 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const cloudinary = require("cloudinary").v2;
 const multer = require("multer");
+const puppeteer = require("puppeteer");
+const handlebars = require("handlebars");
+const fs = require("fs").promises;
+const path = require("path");
 
 // 2. CONFIGURACIÓN INICIAL
 // -----------------------------------------------------------------------------
@@ -656,6 +660,63 @@ app.post(
     }
   }
 );
+
+// ENDPOINT PARA PDF
+app.get("/api/affiliations/:id/pdf", authenticateToken, async (req, res) => {
+  let browser = null;
+  try {
+    const { id } = req.params;
+    const result = await pool.query(
+      "SELECT a.*, p.titulo FROM affiliations a LEFT JOIN planes p ON a.form_data->>'plan' = p.value WHERE a.id = $1",
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Afiliación no encontrada." });
+    }
+    const affiliationData = { ...result.rows[0].form_data, ...result.rows[0] };
+
+    affiliationData.operacion = (affiliationData.operacion || "").toUpperCase();
+    if (affiliationData.integrantesList) {
+      affiliationData.integrantesList.forEach((p) => {
+        p.cuotaMensual = parseInt(p.cuotaMensual || 0);
+      });
+    }
+    affiliationData.total = parseInt(affiliationData.total || 0);
+    affiliationData.fechaGeneracion = new Date().toLocaleDateString("es-AR");
+
+    const templateHtmlPath = path.join(
+      __dirname,
+      "templates",
+      "afiliacion.hbs"
+    );
+    const stylesCssPath = path.join(__dirname, "templates", "styles.css");
+    const templateHtml = await fs.readFile(templateHtmlPath, "utf8");
+    const cssContent = await fs.readFile(stylesCssPath, "utf8");
+
+    const template = handlebars.compile(templateHtml);
+    const finalHtml = template({ ...affiliationData, cssContent: cssContent });
+
+    browser = await puppeteer.launch({
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+    const page = await browser.newPage();
+
+    await page.setContent(finalHtml, { waitUntil: "networkidle0" });
+    const pdfBuffer = await page.pdf({ format: "A4", printBackground: true });
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename=solicitud-${affiliationData.solicitud || id}.pdf`
+    );
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error("Error al generar el PDF:", error);
+    res.status(500).json({ message: "No se pudo generar el PDF." });
+  } finally {
+    if (browser) await browser.close();
+  }
+});
 
 // ENDPOINT PARA LOS DATOS DEL DASHBOARD
 
