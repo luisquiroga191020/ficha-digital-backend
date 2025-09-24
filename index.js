@@ -668,8 +668,6 @@ app.get("/api/affiliations/:id/pdf", authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
 
-    // 1. OBTENER DATOS DE LA AFILIACIÓN Y DEL PLAN EN UNA SOLA CONSULTA
-    // (Esto es más eficiente que hacer dos consultas separadas)
     const result = await pool.query(
       `SELECT 
         a.*, 
@@ -686,11 +684,8 @@ app.get("/api/affiliations/:id/pdf", authenticateToken, async (req, res) => {
       return res.status(404).json({ message: "Afiliación no encontrada." });
     }
 
-    // Combina los datos del JSON con los de las columnas principales
     const affiliationData = { ...result.rows[0].form_data, ...result.rows[0] };
 
-    // 2. FORMATEAR DATOS PARA LA PLANTILLA
-    // Hacemos el formateo aquí para mantener la plantilla Handlebars lo más simple posible
     affiliationData.operacion = (affiliationData.operacion || "").toUpperCase();
     if (affiliationData.integrantesList) {
       affiliationData.integrantesList.forEach((p) => {
@@ -700,7 +695,6 @@ app.get("/api/affiliations/:id/pdf", authenticateToken, async (req, res) => {
     affiliationData.total = parseInt(affiliationData.total || 0);
     affiliationData.fechaGeneracion = new Date().toLocaleDateString("es-AR");
 
-    // 3. LEER Y COMPILAR LA PLANTILLA
     const templateHtmlPath = path.join(
       __dirname,
       "templates",
@@ -713,7 +707,6 @@ app.get("/api/affiliations/:id/pdf", authenticateToken, async (req, res) => {
     const template = handlebars.compile(templateHtml);
     const finalHtml = template({ ...affiliationData, cssContent: cssContent });
 
-    // 4. LANZAR PUPPETEER Y GENERAR PDF
     browser = await puppeteer.launch({
       headless: "new",
       args: [
@@ -730,10 +723,9 @@ app.get("/api/affiliations/:id/pdf", authenticateToken, async (req, res) => {
     const pdfBuffer = await page.pdf({
       format: "A4",
       printBackground: true,
-      margin: { top: "1mm", right: "1mm", bottom: "1mm", left: "1mm" }, // Márgenes ajustados
+      margin: { top: "1mm", right: "1mm", bottom: "1mm", left: "1mm" }, 
     });
 
-    // 5. ENVIAR PDF AL CLIENTE
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(
       "Content-Disposition",
@@ -744,7 +736,6 @@ app.get("/api/affiliations/:id/pdf", authenticateToken, async (req, res) => {
     console.error("Error al generar el PDF:", error);
     res.status(500).json({ message: "No se pudo generar el PDF." });
   } finally {
-    // Asegurarse de cerrar el navegador SIEMPRE para no dejar procesos colgados
     if (browser) {
       await browser.close();
     }
