@@ -93,6 +93,8 @@ body {
   grid-template-columns: repeat(3, 1fr);
   gap: 4px 12px;
   font-size: 6pt;
+  border: 1px solid #e0e0e0;
+  padding-left: 10px;
 }
 .total-line {
   font-size: 11pt;
