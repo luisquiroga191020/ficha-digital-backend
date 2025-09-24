@@ -8,7 +8,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const cloudinary = require("cloudinary").v2;
 const multer = require("multer");
-const puppeteer = require('puppeteer-core');
+const puppeteer = require('puppeteer');
 const handlebars = require("handlebars");
 const fs = require("fs").promises;
 const path = require("path");
@@ -714,18 +714,11 @@ app.get("/api/affiliations/:id/pdf", authenticateToken, async (req, res) => {
 
     // 4. LANZAR PUPPETEER Y GENERAR PDF
 browser = await puppeteer.launch({
-    // La línea más importante: le dice a puppeteer-core dónde encontrar Chrome.
     executablePath: '/usr/bin/google-chrome-stable',
-    
-    // El modo "headless" nuevo es el recomendado.
     headless: "new",
-    
-    // Argumentos esenciales para la estabilidad en entornos Docker/Linux sin interfaz gráfica.
     args: [
       '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage', // Previene errores de memoria compartida
-      '--disable-gpu' // No necesitamos aceleración gráfica en el servidor
+      '--disable-setuid-sandbox'
     ]
 });
     const page = await browser.newPage();
