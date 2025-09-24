@@ -1,59 +1,37 @@
-# Usar una imagen base de Node.js delgada para mantener el tamaño bajo
+# Usar la imagen oficial de Node.js 20-slim como base
 FROM node:20-slim
 
-# Instalar dependencias del sistema operativo necesarias para Chrome
-# y también 'ca-certificates' para conexiones HTTPS
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-    ca-certificates \
-    fonts-liberation \
-    libasound2 \
-    libatk-bridge2.0-0 \
-    libatk1.0-0 \
-    libcairo2 \
-    libcups2 \
-    libdbus-1-3 \
-    libexpat1 \
-    libfontconfig1 \
-    libgbm1 \
-    libgcc1 \
-    libgconf-2-4 \
-    libgdk-pixbuf2.0-0 \
-    libglib2.0-0 \
-    libgtk-3-0 \
-    libnspr4 \
-    libnss3 \
-    libpango-1.0-0 \
-    libpangocairo-1.0-0 \
-    libstdc++6 \
-    libx11-6 \
-    libx11-xcb1 \
-    libxcb1 \
-    libxcomposite1 \
-    libxcursor1 \
-    libxdamage1 \
-    libxext6 \
-    libxfixes3 \
-    libxi6 \
-    libxrandr2 \
-    libxrender1 \
-    libxss1 \
-    libxtst6 \
-    libxtst6 \
-    lsb-release \
-    wget \
-    xdg-utils \
-    --fix-missing
+# Instalar wget y ca-certificates, herramientas necesarias para descargar Chrome
+RUN apt-get update && apt-get install -y wget ca-certificates
 
+# =================================================================================
+# ===== ESTE ES EL BLOQUE CLAVE: DESCARGAR E INSTALAR GOOGLE CHROME OFICIAL =====
+# =================================================================================
+# Añadir el repositorio de Google Chrome a las fuentes de software del sistema
+RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add - \
+    && sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list'
+
+# Actualizar la lista de paquetes e instalar Chrome Stable y las fuentes necesarias
+RUN apt-get update \
+    && apt-get install -y google-chrome-stable fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-kacst fonts-freefont-ttf libxss1 \
+    --no-install-recommends \
+    && rm -rf /var/lib/apt/lists/*
+# =================================================================================
+
+# Establecer el directorio de trabajo
 WORKDIR /usr/src/app
 
+# Copiar los archivos de dependencias
 COPY package*.json ./
 
-# Instalar dependencias. Usamos --no-optional para saltar
-# la descarga de Chrome que haría puppeteer si estuviera como dependencia.
-RUN npm install --no-optional
+# Instalar las dependencias de Node.js
+RUN npm install
 
+# Copiar el resto del código de la aplicación
 COPY . .
 
-# Comando para iniciar la aplicación
+# Exponer el puerto
+EXPOSE 3001
+
+# El comando para iniciar la aplicación
 CMD [ "node", "index.js" ]
