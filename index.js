@@ -661,6 +661,7 @@ app.post(
   }
 );
 
+
 // --- ENDPOINT PARA GENERAR PDF DE UNA AFILIACIÓN ---
 app.get("/api/affiliations/:id/pdf", authenticateToken, async (req, res) => {
   let browser = null;
@@ -729,7 +730,7 @@ app.get("/api/affiliations/:id/pdf", authenticateToken, async (req, res) => {
     const pdfBuffer = await page.pdf({
       format: "A4",
       printBackground: true,
-      margin: { top: "7mm", right: "7mm", bottom: "7mm", left: "7mm" }, // Márgenes ajustados
+      margin: { top: "1mm", right: "1mm", bottom: "1mm", left: "1mm" }, // Márgenes ajustados
     });
 
     // 5. ENVIAR PDF AL CLIENTE
