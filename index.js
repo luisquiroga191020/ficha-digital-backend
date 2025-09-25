@@ -686,6 +686,8 @@ app.get("/api/affiliations/:id/pdf", authenticateToken, async (req, res) => {
 
     const affiliationData = { ...result.rows[0].form_data, ...result.rows[0] };
 
+    affiliationData = convertObjectStringsToUppercase(affiliationData);
+
     affiliationData.operacion = (affiliationData.operacion || "").toUpperCase();
     if (affiliationData.integrantesList) {
       affiliationData.integrantesList.forEach((p) => {
@@ -1140,3 +1142,36 @@ app.delete(
 app.listen(PORT, () => {
   console.log(`🚀 Servidor backend corriendo en el puerto ${PORT}`);
 });
+
+
+
+
+// ==========================================================
+// ===== FUNCIONES AUXILIARES =====
+// ==========================================================
+
+// CONVERSIÓN A MAYÚSCULAS
+function convertObjectStringsToUppercase(data) {
+    if (data === null || typeof data !== 'object') {
+        return data;
+    }
+
+    if (Array.isArray(data)) {
+        return data.map(item => convertObjectStringsToUppercase(item));
+    }
+
+    const newObj = {};
+    for (const key in data) {
+        if (Object.prototype.hasOwnProperty.call(data, key)) {
+            const value = data[key];
+            
+            if (typeof value === 'string') {
+                newObj[key] = value.toUpperCase();
+            } 
+            else {
+                newObj[key] = convertObjectStringsToUppercase(value);
+            }
+        }
+    }
+    return newObj;
+}
