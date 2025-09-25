@@ -75,7 +75,7 @@ body {
 .pdf-table-compact {
   width: 100%;
   border-collapse: collapse;
-  font-size: 6.5pt;
+  font-size: 5.5pt;
 }
 .pdf-table-compact th,
 .pdf-table-compact td {
@@ -85,14 +85,14 @@ body {
 }
 .pdf-table-compact thead {
   color: #444;
-  font-size: 6pt;
+  font-size: 5.5pt;
   font-weight: 700;
 }
 .ddjj-grid-6x3 {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   gap: 4px 12px;
-  font-size: 5pt;
+  font-size: 5.5pt;
   border: 1px solid #e0e0e0;
   padding-left: 10px;
   padding-top: 3px;
