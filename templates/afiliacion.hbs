@@ -77,7 +77,9 @@
                 <span class="pdf-data-item"><span class="label">Cuit/Cuil:</span><span class="data">{{ cuilConyuge }}</span></span>
                 <span class="pdf-data-item"><span class="label">Sexo:</span><span class="data">{{ sexoConyuge }}</span></span>
                 <span class="pdf-data-item"><span class="label">Fecha de nacimiento:</span><span class="data">{{ fechaNacimientoConyuge }}</span></span>
+                <span class="pdf-data-item"><span class="label">Fecha de nacimiento:</span><span class="data">{{ edadConyuge }}</span></span>
                 <span class="pdf-data-item"><span class="label">Nacionalidad:</span><span class="data">{{ nacionalidadConyuge }}</span></span>
+                <span class="pdf-data-item"><span class="label">Teléfono:</span><span class="data">{{ telefonoConyuge }}</span></span>
                 <span class="pdf-data-item"><span class="label">Actividad laboral:</span><span class="data">{{ actividadLaboralConyuge }}</span></span>
                 <span class="pdf-data-item"><span class="label">Condición IVA:</span><span class="data">{{ condicionIVAConyuge }}</span></span>
             </div>
@@ -120,42 +122,42 @@
             <div style="display: flex; justify-content: center; margin-top: 3px;">DECLARACIÓN JURADA DE SALUD</div>
             <p class="pdf-data-fluid" style="font-size: 6.5pt; text-align: justify; margin-bottom: 5px;"><span class="pdf-data-item" style="white-space: normal;"><span class="label">El que suscribe la presente, declara bajo juramento que las respuestas que se consigan a continuación y sus ampliaciones y declaraciones, han sido completadas teniendo pleno conocimiento de que cualquier ocultamiento, falsedad o reticencia sobre su verdadero estado de salud o el de su grupo familiar, determinará que la afiliación sea nula.</span></span></p>
             <div class="pdf-data-fluid" style="margin-top: 5px;">
-                <span class="pdf-data-item"><span class="label">1. ¿Buen estado de salud?</span><span class="data">{{ ddjj1 }}</span></span>
-                <span class="pdf-data-item"><span class="label">2. ¿Dificultad en tareas?</span><span class="data">{{ ddjj2 }}</span></span>
-                <span class="pdf-data-item"><span class="label">3-¿Ha sido tratado Ud. y/o su grupo familiar alguna vez, o está actualmente en tratamiento por las siguientes enfermedades?</span></span>
+                <span class="pdf-data-item"><span class="label">1. ¿Se siente Ud. y su grupo familiar en buen estado de salud?</span><span class="data">{{ ddjj1 }}</span></span>
+                <span class="pdf-data-item"><span class="label">2. ¿Tiene Ud. y/o su grupo familiar alguna dificultad para el desempeño de sus tareas laborales habituales?</span><span class="data">{{ ddjj2 }}</span></span>
+                <span class="pdf-data-item"><span class="label">3. ¿Ha sido tratado Ud. y/o su grupo familiar alguna vez, o está actualmente en tratamiento por las siguientes enfermedades?</span></span>
             </div>
             
             <div class="ddjj-grid-6x3">
-                <span class="pdf-data-item"><span class="label">3a. Cardiovasculares</span></span>
+                <span class="pdf-data-item"><span class="label">a. Cardiovasculares</span></span>
                 <span class="pdf-data-item"><span class="data">{{ ddjj4 }}</span></span>
-                <span class="pdf-data-item"><span class="label">3b. Broncopulmonares</span></span>
+                <span class="pdf-data-item"><span class="label">b. Broncopulmonares</span></span>
                 <span class="pdf-data-item"><span class="data">{{ ddjj5 }}</span></span>
-                <span class="pdf-data-item"><span class="label">3c. Hipertensión</span></span>
+                <span class="pdf-data-item"><span class="label">c. Hipertensión</span></span>
                 <span class="pdf-data-item"><span class="data">{{ ddjj6 }}</span></span>
-                <span class="pdf-data-item"><span class="label">3d. Diabetes</span></span>
+                <span class="pdf-data-item"><span class="label">d. Diabetes</span></span>
                 <span class="pdf-data-item"><span class="data">{{ ddjj7 }}</span></span>
-                <span class="pdf-data-item"><span class="label">3e. Malignas (Cáncer)</span></span>
+                <span class="pdf-data-item"><span class="label">e. Malignas (Cáncer)</span></span>
                 <span class="pdf-data-item"><span class="data">{{ ddjj8 }}</span></span>
-                <span class="pdf-data-item"><span class="label">3f. Inmunodeficiencia</span></span>
+                <span class="pdf-data-item"><span class="label">f. Inmunodeficiencia</span></span>
                 <span class="pdf-data-item"><span class="data">{{ ddjj9 }}</span></span>
-                <span class="pdf-data-item"><span class="label">3g. Convulsiones</span></span>
+                <span class="pdf-data-item"><span class="label">g. Convulsiones</span></span>
                 <span class="pdf-data-item"><span class="data">{{ ddjj10 }}</span></span>
-                <span class="pdf-data-item"><span class="label">3h. Mal de Chagas</span></span>
+                <span class="pdf-data-item"><span class="label">h. Mal de Chagas</span></span>
                 <span class="pdf-data-item"><span class="data">{{ ddjj11 }}</span></span>
-                <span class="pdf-data-item"><span class="label">3i. Otras</span></span>
+                <span class="pdf-data-item"><span class="label">i. Otras</span></span>
                 <span class="pdf-data-item"><span class="data">{{ ddjj12 }}</span></span>
             </div>
             <div class="pdf-data-fluid" style="margin-top: 5px;">
-                <span class="pdf-data-item"><span class="label">4. ¿Defecto físico o discapacidad?</span><span class="data">{{ ddjj13 }}</span></span>
-                <span class="pdf-data-item"><span class="label">5. ¿Internado últimos 24 meses?</span><span class="data">{{ ddjj14 }}</span></span>
-                <span class="pdf-data-item"><span class="label">6. ¿Operación últimos 24 meses?</span><span class="data">{{ ddjj15 }}</span></span>
-                <span class="pdf-data-item"><span class="label">7. ¿Toma medicación regular?</span><span class="data">{{ ddjj16 }}</span></span>
+                <span class="pdf-data-item"><span class="label">4. ¿Tiene Ud. y/o su grupo familiar algún defecto físico o discapacidad?</span><span class="data">{{ ddjj13 }}</span></span>
+                <span class="pdf-data-item"><span class="label">5. ¿Ha sido Ud. y/o su grupo familiar en los últimos 24 meses?</span><span class="data">{{ ddjj14 }}</span></span>
+                <span class="pdf-data-item"><span class="label">6. ¿Se le ha efectuado alguna operación a Ud. y/o su grupo familiar en los últimos 24 meses?</span><span class="data">{{ ddjj15 }}</span></span>
+                <span class="pdf-data-item"><span class="label">7. ¿Toma Ud. y/o su grupo familiar en forma regular alguna medicación?</span><span class="data">{{ ddjj16 }}</span></span>
                 <span class="pdf-data-item"><span class="label"  style="font-size: 6.5pt;">En caso de respuesta afirmativa a las preguntas 2, 3, 4, 5, 6 y 7, o negativa a la 1; aclare en el anexo el integrante/s por qué (diagnóstico), cuándo ocurrió (fechas), dónde (Hospital o Clínica), nombre del médico que atendió, nombre del medicamento y dosis diaria.</span><span class="data"> Cantidad de anexos presentados: {{ anexo }}</span></span>
                 <span class="pdf-data-item" style="font-size: 6.5pt; font-weight: bold; color: black;">Disposiciones Fundamentales</span>
                 <span class="pdf-data-item" style="font-size: 6.5pt;"><span class="label">Declaro y certifico que los datos consignados con respecto a mi estado de salud y del grupo familiar son exactos.</span>
                 <span class="pdf-data-item" style="font-size: 6.5pt;"><span class="label">RETICENCIA O FALSA DECLARACIÓN art. 5° (sección 2) Ley 17.418. Toda declaración falsa o toda reticencia de circunstancias conocidas por el contratante o los asegurados, aún hechas de buena fe, que a juicio de los peritos hubiese impedido el contrato o modificado sus condiciones si la compañía hubiese conocido el verdadero estado de riesgo, hace nulo el contrato y los certificados según el caso.</span></span>
                 <span class="pdf-data-item" style="font-size: 6.5pt; font-weight: bold; color: black;">Declaración Jurada sobre persona expuesta políticamente: Resolución UIF N° 52/2012:</span>
-                <span class="pdf-data-item" style="font-size: 6.5pt;"><span class="label">Quien suscribe la presente declara bajo juramento que los datos consignados en la presente son correctos, completos y fiel expresión de la verdad y que <span class="data">{{ pep }}</span></span> me encuentro incluido y/o alcanzado dentro de la Nómina de Funciones/ Funcionarios de Personas Expuestas Políticamente. Declaro bajo juramento la licitud de los fondos relacionados a esta operación en cumplimiento de la R 230/2011 de la UIF.</span>
+                <span class="pdf-data-item" style="font-size: 6.5pt;"><span class="label">Quien suscribe la presente declara bajo juramento que los datos consignados en la presente son correctos, completos y fiel expresión de la verdad y que <span class="data">{{ pep }}</span></span>me encuentro incluido y/o alcanzado dentro de la Nómina de Funciones/ Funcionarios de Personas Expuestas Políticamente. Declaro bajo juramento la licitud de los fondos relacionados a esta operación en cumplimiento de la R 230/2011 de la UIF.</span>
             </div>
         </div>
 
@@ -196,7 +198,13 @@
 
     <!-- PÁGINA 2 -->
     <div id="pdf-page-2" class="pdf-page">
-         <P>Contenido de la Página 2</P>
+        <P>Contenido de la Página 2</P>
+        <div class="pdf-line-footer">                                              
+            <span><span class="label">Promotor:</span><span class="data">{{ generadoPor }}</span></span>
+            <span><span class="label">Salta,</span><span class="data">{{ fechaGeneracion }}</span></span>
+            <span class="data pdf-signature-line">Firma y aclaración del titular o resp.</span>
+        </div> 
+        <div class="pdf-footer">SOLICITUD SUJETA A APROBACIÓN</div>   
     </div>
 </div>
 </body>
