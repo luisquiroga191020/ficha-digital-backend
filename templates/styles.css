@@ -8,7 +8,7 @@ body {
   width: 210mm;
   min-height: 297mm;
   padding-top: 1mm;
-  padding-right: 5mm;
+  padding-right: 4mm;
   padding-bottom: 1mm;
   box-sizing: border-box;
   position: relative;
@@ -107,9 +107,9 @@ body {
 }
 .pdf-line-footer {
   position: absolute;
-  left: 7mm;
-  right: 7mm;
-  bottom: 10mm;
+  left: 2mm;
+  right: 3mm;
+  bottom: 6mm;
   display: flex;
   justify-content: space-between;
   font-size: 7.5pt;
@@ -123,9 +123,9 @@ body {
 }
 .pdf-footer {
   position: absolute;
-  left: 7mm;
-  right: 7mm;
-  bottom: 3mm;
+  left: 1mm;
+  right: 3mm;
+  bottom: 2mm;
   color: white;
   background-color: #777;
   text-align: center;
