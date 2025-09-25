@@ -684,7 +684,7 @@ app.get("/api/affiliations/:id/pdf", authenticateToken, async (req, res) => {
       return res.status(404).json({ message: "Afiliación no encontrada." });
     }
 
-    const affiliationData = { ...result.rows[0].form_data, ...result.rows[0] };
+    let affiliationData = { ...result.rows[0].form_data, ...result.rows[0] };
 
     affiliationData = convertObjectStringsToUppercase(affiliationData);
 
