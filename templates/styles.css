@@ -7,7 +7,9 @@ body {
 .pdf-page {
   width: 210mm;
   min-height: 297mm;
-  padding: 1mm;
+  padding-top: 1mm;
+  padding-right: 4mm;
+  padding-bottom: 1mm;
   box-sizing: border-box;
   position: relative;
 }
@@ -75,7 +77,7 @@ body {
 .pdf-table-compact {
   width: 100%;
   border-collapse: collapse;
-  font-size: 5.5pt;
+  font-size: 6pt;
 }
 .pdf-table-compact th,
 .pdf-table-compact td {
@@ -85,7 +87,7 @@ body {
 }
 .pdf-table-compact thead {
   color: #444;
-  font-size: 5.5pt;
+  font-size: 6pt;
   font-weight: 700;
 }
 .ddjj-grid-6x3 {
