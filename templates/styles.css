@@ -14,39 +14,6 @@ body {
   box-sizing: border-box;
   position: relative;
 }
-.wave {
-  position: absolute;
-  z-index: -100;
-  top: 0mm;
-  height: 35px;
-  width: 210mm;
-  background: rgb(212, 212, 212);
-  transform: scale(1, 1);
-}
-.wave:before {
-  content: "";
-  display: block;
-  position: absolute;
-  border-radius: 100%;
-  width: 210mm;
-  height: 300px;
-  background-color: white;
-  right: -25%;
-  top: 15px;
-}
-
-.wave:after {
-  content: "";
-  display: block;
-  position: absolute;
-  border-radius: 100%;
-  width: 210mm;
-  height: 300px;
-  background-color: rgb(212, 212, 212);
-  left: -25%;
-  top: -245px;
-  clip-path: ellipse(100% 15% at -15% 100%);
-}
 .pdf-header {
   display: flex;
   justify-content: space-between;
