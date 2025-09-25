@@ -65,7 +65,7 @@ body {
 }
 .pdf-data-item .label {
   font-weight: normal;
-  color: #555;
+  color: #444;
   margin-right: 4px;
 }
 .pdf-data-item .data {
@@ -84,17 +84,18 @@ body {
   border-bottom: 1px solid #e0e0e0;
 }
 .pdf-table-compact thead {
-  color: #666;
+  color: #444;
   font-size: 6.5pt;
   font-weight: 700;
 }
-.ddjj-grid-3x3 {
+.ddjj-grid-6x3 {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 4px 12px;
   font-size: 6pt;
   border: 1px solid #e0e0e0;
   padding-left: 10px;
+  margin: 5px;
 }
 .total-line {
   font-size: 11pt;
