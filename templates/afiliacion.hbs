@@ -7,7 +7,7 @@
     </style>
 </head>
 <body>
-    <!-- PÁGINA 1 -->
+       <!-- PÁGINA 1 -->
     <div id="pdf-page-1" class="pdf-page">
         <!-- Encabezado -->
         <div class="pdf-header">
@@ -197,8 +197,54 @@
     </div>
 
     <!-- PÁGINA 2 -->
+
+<div id="pdf-page-2" class="pdf-page" style="page-break-before: always;">
+
+    <div class="pdf-section-title">CONDICIONES GENERALES</div>
+    <div class="two-columns">
+        <div class="column">
+            <p>- Carroza fúnebre.</p>
+            <p>- Carroza porta coronas (en caso de haber más de 4 (cuatro) coronas).</p>
+            <p>- 2 (dos) Autos de acompañamiento.</p>
+            <p>- Ataúd París Superior.</p>
+            <p>- Sala velatorio.</p>
+            <p>- Servicio de buffet en sala.</p>
+            <p>- Instalación de capilla ardiente a domicilio.</p>
+            <p>- Pack de buffet domiciliario.</p>
+            <p>- Cobertura a nivel nacional.</p>
+            <p>- Traslado desde cualquier punto del país a su domicilio declarado en la Provincia de Salta.</p>
+        </div>
+        <div class="column">
+            <p>- Servicio de Tanatopraxia en Salta Capital.</p>
+            <p>- Servicio de Tanatoestética en la provincia de Salta.</p>
+            <p>- Parcela a perpetuidad en Cementerio Parque que incluye apertura, placa, florero y mantenimiento por un año, en Salta en cementerio Parque Santa Teresita o Servicio de Cremación con provisión de urna o nicho hasta 5 años en cementerio municipal.</p>
+            <p>- Pago de impuestos y sellado.</p>
+            <p>- Esquela necrológica de 50 palabras con foto o 3 pases radiales.</p>
+            <p>- Misa sin cargo en capilla propia.</p>
+            <p>- Asesor fúnebre las 24 hs.</p>
+            <p>- Subsidio de gasto de Luto $10.000, por fallecimiento de cualquier integrante del grupo familiar.</p>
+        </div>
+    </div>
+    <p class="small-text"><b>IMPORTANTE:</b> El servicio deberá ser requerido exclusivamente en la Empresa Pieve S.A. El servicio de sepelios que brinda es completo, no contemplándose reintegros por el NO uso parcial o total del mismo. El servicio queda sujeto a usos y costumbres de la zona y a la disponibilidad técnica y geográfica. Cuando el plan contemple un límite de edad hasta 25 años para hijos, pagarán a partir de esa edad como adherentes (dentro del mismo plan). Vigencia por débito automático, banco o empresa al primer débito, por accidente. De 0 a 65 años - 90 días con la cuota al día. De 66 a 70 años - 180 días con la cuota al día. Los sistemas de cobro a domicilio, débito automático en caja de ahorro, cuenta corriente o tarjeta de crédito, descuento por planilla de sueldo, etc. son servicios complementarios al cliente que no liberan a éste de la responsabilidad de tal control y de la efectivización de sus pagos en las oficinas de la empresa dentro de los plazos establecidos de manera que no se produzcan involuntariamente atrasos en sus pagos de primas que generen la pérdida de la vigencia correspondiente. Confiero mandato para contratar seguro sepelio, vida, salud, accidente personales, transplante de órganos o pólizas colectivas emitidas por Pieve Seguros S.A. y/o Instituto de Salta Seguros de Vida S.A.</p>
+    
+    <div class="pdf-section-title">BENEFICIOS SIN COSTO</div>
+    <div class="sub-title">SEGURO DE TRANSPLANTE</div>
+    <p class="small-text">Comprobado el transplante de órganos humanos como única alternativa terapéutica para el titular, se abonará al momento o con posterioridad al acto quirúrgico, la suma indemnizatoria. Exclusión a los 70 años.</p>
+    <div style="text-align: center; font-weight: bold; font-size: 7pt; border-top: solid 1px; border-left: solid 1px; border-right: solid 1px;">Capitales Asegurados</div>
+    <table class="benefits-table">
+        <tr><td>Médula Ósea.. .$280.000</td><td>Corazón - Pulmón.. .$200.000</td><td>Hepático.. .$200.000</td><td>Riñón.. .$80.000</td></tr>
+        <tr><td>Corazón.... $200.000</td><td>Pulmón - Bipulmón.. .$200.000</td><td>Páncreas.. .$200.000</td><td>Córneas.. .$20.000</td></tr>
+    </table>
+    
+    <div class="pdf-section-title">SALUD - VÁLIDO PARA PLANES: PIEVE, PIEVE 6, NIVEL 1 Y NIVEL 7</div>
+    <!-- (otros) -->
+    
+    <div class="pdf-section-title" style="margin-top: 10px;">AUTORIZACIÓN DÉBITO AUTOMÁTICO</div>
+    <p class="small-text">
+        Nombre Y Apellido <b class="data-cell-bold">{{ apellidoResponsablePago }}, {{ nombreResponsablePago }}</b> en mi carácter de adherente al sistema <b class="data-cell-bold">{{ empresa }}</b> Cuenta N° <b class="data-cell-bold">{{ cbu }}</b> N° de tarjeta <b class="data-cell-bold">{{ tarjeta }}</b> Vto. <b class="data-cell-bold">{{ vencimiento }}</b> autorizo a incluir en mi resumen mensual y dentro de la cuenta de pago mínimo, el importe de la cuenta o factura mensual en concepto de pago de servicios de SEPELIO prestado por Pieve Salud S.A.
+        Igualmente manifiesto que <b class="data-cell-bold">{{ empresa }}</b> no se responsabiliza por el cumplimiento de las obligaciones asumidas por siendo totalmente extraño por cualquier concepto por la falta o deficiente atención de los servicios. También se me ha informado que la presente autorización podrá ser revocada temporal o definitivamente, debiendo en tal caso notificar a ADMINISTRACIÓN PIEVE S.A.
+    </p>
     <div id="pdf-page-2" class="pdf-page">
-        <P>Contenido de la Página 2</P>
         <div class="pdf-line-footer">                                              
             <span><span class="label">Promotor:</span><span class="data">{{ generadoPor }}</span></span>
             <span><span class="label">Salta,</span><span class="data">{{ fechaGeneracion }}</span></span>
@@ -206,6 +252,8 @@
         </div> 
         <div class="pdf-footer">SOLICITUD SUJETA A APROBACIÓN</div>   
     </div>
+</div>
+
 </div>
 </body>
 </html>

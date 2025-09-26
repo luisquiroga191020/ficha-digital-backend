@@ -134,3 +134,43 @@ body {
   font-weight: bold;
   padding: 2px;
 }
+
+/* PÁGINA 2 */
+
+.two-columns {
+    display: flex;
+    justify-content: space-between;
+    gap: 15px; 
+}
+.column {
+    width: 48%; 
+}
+.column p {
+    font-size: 7pt;
+    margin: 2px 0;
+    text-align: justify;
+}
+.sub-title {
+    font-weight: bold;
+    padding-left: 3px;
+    margin-top: -3px;
+    border: 1px solid #000;
+    font-size: 7.5pt;
+}
+.benefits-table {
+    width: 100%;
+    font-size: 6.5pt;
+    border-collapse: collapse;
+    border: solid 1px;
+    margin-bottom: 6px;
+}
+.benefits-table td {
+    padding: 2px 4px;
+
+}
+.small-text { 
+  font-size: 6.5pt;
+  text-align: justify;
+  line-height: 1.2;
+  margin: 3px 0;
+}
