@@ -161,7 +161,7 @@ body {
     width: 100%;
     font-size: 6.5pt;
     border-collapse: collapse;
-    border: solid 1px;
+    border: solid 1px #888;
     margin-bottom: 6px;
 }
 .benefits-table td {
