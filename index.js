@@ -10,6 +10,32 @@ const cloudinary = require("cloudinary").v2;
 const multer = require("multer");
 const puppeteer = require("puppeteer");
 const handlebars = require("handlebars");
+handlebars.registerHelper("ifCond", function (v1, operator, v2, options) {
+  switch (operator) {
+    case "==":
+      return v1 == v2 ? options.fn(this) : options.inverse(this);
+    case "===":
+      return v1 === v2 ? options.fn(this) : options.inverse(this);
+    case "!=":
+      return v1 != v2 ? options.fn(this) : options.inverse(this);
+    case "!==":
+      return v1 !== v2 ? options.fn(this) : options.inverse(this);
+    case "<":
+      return v1 < v2 ? options.fn(this) : options.inverse(this);
+    case "<=":
+      return v1 <= v2 ? options.fn(this) : options.inverse(this);
+    case ">":
+      return v1 > v2 ? options.fn(this) : options.inverse(this);
+    case ">=":
+      return v1 >= v2 ? options.fn(this) : options.inverse(this);
+    case "&&":
+      return v1 && v2 ? options.fn(this) : options.inverse(this);
+    case "||":
+      return v1 || v2 ? options.fn(this) : options.inverse(this);
+    default:
+      return options.inverse(this);
+  }
+});
 const fs = require("fs").promises;
 const path = require("path");
 
@@ -661,7 +687,6 @@ app.post(
   }
 );
 
-
 // --- ENDPOINT PARA GENERAR PDF DE UNA AFILIACIÓN ---
 app.get("/api/affiliations/:id/pdf", authenticateToken, async (req, res) => {
   let browser = null;
@@ -672,6 +697,7 @@ app.get("/api/affiliations/:id/pdf", authenticateToken, async (req, res) => {
       `SELECT 
         a.*, 
         p.titulo,
+        p.tipo, 
         u.full_name as creatorUserName 
        FROM affiliations a 
        LEFT JOIN planes p ON a.form_data->>'plan' = p.value
@@ -725,7 +751,7 @@ app.get("/api/affiliations/:id/pdf", authenticateToken, async (req, res) => {
     const pdfBuffer = await page.pdf({
       format: "A4",
       printBackground: true,
-      margin: { top: "1mm", right: "1mm", bottom: "1mm", left: "1mm" }, 
+      margin: { top: "1mm", right: "1mm", bottom: "1mm", left: "1mm" },
     });
 
     res.setHeader("Content-Type", "application/pdf");
@@ -1143,35 +1169,31 @@ app.listen(PORT, () => {
   console.log(`🚀 Servidor backend corriendo en el puerto ${PORT}`);
 });
 
-
-
-
 // ==========================================================
 // ===== FUNCIONES AUXILIARES =====
 // ==========================================================
 
 // CONVERSIÓN A MAYÚSCULAS
 function convertObjectStringsToUppercase(data) {
-    if (data === null || typeof data !== 'object') {
-        return data;
-    }
+  if (data === null || typeof data !== "object") {
+    return data;
+  }
 
-    if (Array.isArray(data)) {
-        return data.map(item => convertObjectStringsToUppercase(item));
-    }
+  if (Array.isArray(data)) {
+    return data.map((item) => convertObjectStringsToUppercase(item));
+  }
 
-    const newObj = {};
-    for (const key in data) {
-        if (Object.prototype.hasOwnProperty.call(data, key)) {
-            const value = data[key];
-            
-            if (typeof value === 'string') {
-                newObj[key] = value.toUpperCase();
-            } 
-            else {
-                newObj[key] = convertObjectStringsToUppercase(value);
-            }
-        }
+  const newObj = {};
+  for (const key in data) {
+    if (Object.prototype.hasOwnProperty.call(data, key)) {
+      const value = data[key];
+
+      if (typeof value === "string") {
+        newObj[key] = value.toUpperCase();
+      } else {
+        newObj[key] = convertObjectStringsToUppercase(value);
+      }
     }
-    return newObj;
+  }
+  return newObj;
 }

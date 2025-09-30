@@ -118,6 +118,7 @@
         {{/if}}
 
         <!-- DECLARACIÓN JURADA DE SALUD -->
+        {{#ifCond tipo '!=' 'PRENECESIDAD'}}
         <div class="pdf-section" style="border: solid 1px #333;">
             <div style="display: flex; justify-content: center; margin-top: 3px;">DECLARACIÓN JURADA DE SALUD</div>
             <p class="pdf-data-fluid" style="font-size: 6.5pt; text-align: justify; margin-bottom: 5px;"><span class="pdf-data-item" style="white-space: normal;"><span class="label">El que suscribe la presente, declara bajo juramento que las respuestas que se consigan a continuación y sus ampliaciones y declaraciones, han sido completadas teniendo pleno conocimiento de que cualquier ocultamiento, falsedad o reticencia sobre su verdadero estado de salud o el de su grupo familiar, determinará que la afiliación sea nula.</span></span></p>
@@ -160,7 +161,7 @@
                 <span class="pdf-data-item" style="font-size: 6.5pt;"><span class="label">Quien suscribe la presente declara bajo juramento que los datos consignados en la presente son correctos, completos y fiel expresión de la verdad y que <span class="data">{{ pep }}</span></span>me encuentro incluido y/o alcanzado dentro de la Nómina de Funciones/ Funcionarios de Personas Expuestas Políticamente. Declaro bajo juramento la licitud de los fondos relacionados a esta operación en cumplimiento de la R 230/2011 de la UIF.</span>
             </div>
         </div>
-
+        {{/ifCond}}
 
         <!-- INTEGRANTES -->
         <div class="pdf-section">
