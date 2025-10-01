@@ -174,3 +174,7 @@ body {
   line-height: 1.2;
   margin: 3px 0;
 }
+.small-text1 { 
+  font-size: 6.5pt;
+  line-height: 0.7;
+}
