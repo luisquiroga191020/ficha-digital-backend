@@ -7,7 +7,7 @@
     </style>
 </head>
 <body>
-    <!-- PÁGINA 1 -->
+        <!-- PÁGINA 1 -->
     <div id="pdf-page-1" class="pdf-page">
         <!-- Encabezado -->
         <div class="pdf-header">
@@ -228,7 +228,7 @@
     <!-- PÁGINA 2 -->
 
 <div id="pdf-page-2" class="pdf-page" style="page-break-before: always;">
-
+{{#ifCond tipo '!=' 'PRENECESIDAD'}}
     <div class="pdf-section-title">CONDICIONES GENERALES</div>
     <div class="two-columns">
         <div class="column">
@@ -381,12 +381,148 @@
         Nombre Y Apellido <b class="data-cell-bold">{{ apellidoResponsablePago }}, {{ nombreResponsablePago }}</b> en mi carácter de adherente al sistema <b class="data-cell-bold">{{ empresa }}</b> Cuenta N° <b class="data-cell-bold">{{ cbu }}</b> N° de tarjeta <b class="data-cell-bold">{{ tarjeta }}</b> Vto. <b class="data-cell-bold">{{ vencimiento }}</b> autorizo a incluir en mi resumen mensual y dentro de la cuenta de pago mínimo, el importe de la cuenta o factura mensual en concepto de pago de servicios de SEPELIO prestado por Pieve Salud S.A.
         Igualmente manifiesto que <b class="data-cell-bold">{{ empresa }}</b> no se responsabiliza por el cumplimiento de las obligaciones asumidas por siendo totalmente extraño por cualquier concepto por la falta o deficiente atención de los servicios. También se me ha informado que la presente autorización podrá ser revocada temporal o definitivamente, debiendo en tal caso notificar a ADMINISTRACIÓN PIEVE S.A.
     </p>
-      <div class="pdf-line-footer">                                              
+    {{/ifCond}}
+
+    {{#ifCond tipo '===' 'PRENECESIDAD'}}
+
+    <div class="two-columns">
+        <div class="column" style="font-size:xx-small;">
+          <p>ADMINISTRACIÓN CENTRAL</p>
+          <p>San Luis 545</p>
+          <p>(0387) 4314591</p>
+          <p>Salta Capital</p>
+        </div>
+        <div class="column" style="font-size:xx-small;">
+          <p>SUCURSALES</p>
+          <p>Orán</p>
+          <p>9 de Julio 770</p>
+          <p>(03878) 423221</p>
+          <p>Pichanal</p>
+          <p>Sarmiento 797</p>
+        </div>
+        <div class="column" style="font-size:xx-small;">
+          <p>Tartagal</p>
+          <p>Belgrano 371</p>
+          <p>(03873) 422161</p>
+          <p>Colonia Santa Rosa</p>
+          <p>Av. Manero 470</p>
+        </div>
+        <div class="column" style="font-size:xx-small;">
+          <p>Embarcación</p>
+          <p>Mza 10 casa 1 Bº Patrón Costas</p>
+          <p>(03878) 15326995</p>
+          <p>Gral. Güemes</p>
+          <p>Rivadavia 545</p>
+          <p>(0387) 4912664</p>
+        </div>
+        <div class="column" style="font-size:xx-small;">
+          <p>Metán</p>
+          <p>Salta N° 1</p>
+          <p>Tel. (03876) 422986</p>
+          <p>Rosario de Lerma</p>
+          <p>San Martín 114</p>
+          <p>(0387) 493218</p>
+        </div>
+        <div class="column" style="font-size:xx-small;">
+          <p>Rosario de la frontera</p>
+          <p>San Martín 104</p>
+          <p>(03876) 483898</p>
+          <p>J.V. González</p>
+          <p>Sarmiento 96</p>
+          <p>(03877) 421975</p>
+        </div>
+        <div class="column" style="font-size:xx-small;">
+          <p>Cafayate</p>
+          <p>Int. Brachieri 160</p>
+          <p>(03868) 4932189</p>
+          <p>San Antonio de los Cobres</p>
+          <p>Caseros esq. Islas Malvinas</p>
+          <p>(0387) 4909064</p>
+        </div>
+    </div>
+    <div class="pdf-section-title" style="margin-top: 10px; display: flex; justify-content: center;">PLAN CONCIENCIA DE PRENECESIDAD, PARCELA Y CREMACIÓN</div>
+    <div class="sub-title" style="margin-top: 4px; display: flex; justify-content: center;">PLAN “A”</div>
+    <div class="small-text">
+      <p>- Ataúd redondo tapa lisa.</p>
+      <p>- Flota de primer nivel.</p>
+      <p>- Carroza fúnebre</p>
+      <p>- Carroza porta coronas</p>
+      <p>- 2 (dos) Coches de duelo</p>
+      <p>- Sala velatorio diferencial.</p>
+      <p>- Servicio de buffet las 24hs.</p>
+      <p>- Parcela a perpetuidad en Cementerio Parque 1 (un) año de mantenimiento pago o servicio de cremación con provisión de urna.</p>
+      <p>- Tanatopraxia.</p>
+      <p>- Esquela.</p>
+      <p>- Trámites en Registro Civil</p>
+    </div>
+    <div class="sub-title" style="margin-top: 4px; display: flex; justify-content: center;">PLAN “B”</div>
+    <div class="small-text">
+      <p>- Ataúd París especial o cruz tallada</p>
+      <p>- Flota de primer nivel.</p>
+      <p>- Carroza fúnebre.</p>
+      <p>- Carroza porta coronas</p>
+      <p>- 2 (dos) Coche de duelo.</p>
+      <p>- Sala velatorio diferencial.</p>
+      <p>- Servicio de buffet las 24hs.</p>
+      <p>- Parcela a perpetuidad en Cementerio Parque 1 (un) año de mantenimiento pago o servicio de cremación con provisión de urna.</p>
+      <p>- Tanatopraxia.</p>
+      <p>- Esquela.</p>
+      <p>- Trámites en Registro Civil</p>
+    </div>
+    <div class="sub-title" style="margin-top: 4px; display: flex; justify-content: center;">PLAN “C”</div>
+    <div class="small-text">
+      <P>- Ataúd Paris Arito.</P>
+      <P>- Flota.</P>
+      <P>- Carroza fúnebre.</P>
+      <P>- Carroza porta coronas.</P>
+      <P>- 2 (dos) Coche de duelo.</P>
+      <P>- Sale velatorio diferencial.</P>
+      <P>- Servicio de buffet las 24 hs.</P>
+      <P>- Parcela a perpetuidad en Cementerio Parque o servicio de cremación con provisión de urna.</P>
+      <P>- Esquela</P>
+      <P>- Trámites en Registro Civil</P>
+    </div>
+    <div class="sub-title" style="margin-top: 4px; display: flex; justify-content: center;">PLAN “D”</div>
+    <div class="small-text">
+      <P>-Ataúd Bóveda tapa lisa.</P>
+      <P>-Carroza fúnebre.</P>
+      <P>-Carroza porta coronas.</P>
+      <P>- 2 (dos) Coche de duelo.</P>
+      <P>-Sala velatorio normal.</P>
+      <P>-Servicio de buffet.</P>
+      <P>-Esquela.</P>
+      <P>- Trámites en Registro. Civil.</P>
+      <P>- Nicho arrendado por 2 (dos) años en cementerio municipal.</P>
+    </div>
+    <div class="sub-title" style="margin-top: 4px; display: flex; justify-content: center;">PLAN “E”</div>
+    <div class="small-text">
+      <P>- Ataúd Borla.</P>
+      <P>- Carroza fúnebre.</P>
+      <P>- Carroza porta coronas</P>
+      <P>- 1 (un) Coche de duelo.</P>
+      <P>- Capilla ardiente en el domicilio.</P>
+      <P>- Trámites en Registro Civil.</P>
+      <P>- Nicho arrendado por 2 (dos) años en cementerio municipal.</P>
+    </div>
+    <div class="sub-title" style="margin-top: 4px; display: flex; justify-content: center;">CREMACIÓN</div>
+    <div class="small-text">
+      <P>- Traslado del cuerpo en carroza fúnebre o furgón sanitario al predio de cremación, ubicado en cementerio Parque Solares de San Pablo. Localidad El Bordo a 3 km de la Ciudad de Gral. Güemes.</P>
+      <P>- Urna cineraria.</P>
+      <P>- Traslado de la urna con los restos cinerarios a la ciudad de Salta.</P>
+    </div>
+  <br>
+  <p class="small-text"><span style="font-weight: bold;">AJUSTE DE CUOTA: </span>Las cuotas podrán sufrir ajustes por parte de la Empresa, las que se realizarán de acuerdo a las variaciones que sufra el precio del servicio fúnebre contratado.
+</p>
+
+    {{/ifCond}}
+
+    <!-- Footer -->
+    <div class="pdf-line-footer">                                              
           <span><span class="label">Promotor:</span><span class="data">{{ generadoPor }}</span></span>
           <span><span class="label">Salta,</span><span class="data">{{ fechaGeneracion }}</span></span>
           <span class="data pdf-signature-line">Firma y aclaración del titular o resp.</span>
-      </div> 
-      <div class="pdf-footer">SOLICITUD SUJETA A APROBACIÓN</div>   
+    </div> 
+    <div class="pdf-footer">SOLICITUD SUJETA A APROBACIÓN</div>   
 
 </div>
 
