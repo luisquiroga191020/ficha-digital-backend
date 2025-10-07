@@ -699,6 +699,7 @@ app.get("/api/affiliations/:id/pdf", authenticateToken, async (req, res) => {
         p.titulo,
         p.tipo, 
         u.full_name as creatorUserName 
+        u.codigo as creatorUserCodigo
        FROM affiliations a 
        LEFT JOIN planes p ON a.form_data->>'plan' = p.value
        LEFT JOIN users u ON a.user_id = u.id
