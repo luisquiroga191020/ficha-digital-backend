@@ -849,16 +849,24 @@ app.post(
         .reduce((sum, f) => sum + parseFloat(f.total), 0);
 
       const ventasPorVendedor = affiliations.reduce((acc, f) => {
-        if (f.status === "Aprobado" && f.vendor_name) {
-          acc[f.vendor_name] = (acc[f.vendor_name] || 0) + 1;
+        if (f.status === "Aprobado" && f.vendor_name && f.total) {
+          if (!acc[f.vendor_name]) {
+            acc[f.vendor_name] = { totalAmount: 0, totalFichas: 0 };
+          }
+          acc[f.vendor_name].totalAmount += parseFloat(f.total);
+          acc[f.vendor_name].totalFichas += 1;
         }
         return acc;
       }, {});
 
       const topVendedores = Object.entries(ventasPorVendedor)
-        .sort(([, a], [, b]) => b - a)
+        .sort(([, a], [, b]) => b.totalAmount - a.totalAmount)
         .slice(0, 3)
-        .map(([name, ventas]) => ({ name, ventas }));
+        .map(([name, data]) => ({
+          name: name,
+          totalAmount: Math.round(data.totalAmount),
+          totalFichas: data.totalFichas,
+        }));
 
       const planesVendidos = affiliations.reduce((acc, f) => {
         if (f.status === "Aprobado" && f.plan) {
