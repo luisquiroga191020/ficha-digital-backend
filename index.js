@@ -771,8 +771,7 @@ app.get("/api/affiliations/:id/pdf", authenticateToken, async (req, res) => {
   }
 });
 
-// ENDPOINT PARA LOS DATOS DEL DASHBOARD
-
+// --- ENDPOINT PARA LOS DATOS DEL DASHBOARD ---
 app.post(
   "/api/dashboard",
   authenticateToken,
@@ -850,15 +849,16 @@ app.post(
         .reduce((sum, f) => sum + parseFloat(f.total), 0);
 
       const ventasPorVendedor = affiliations.reduce((acc, f) => {
-        if (f.status === "Aprobado") {
+        if (f.status === "Aprobado" && f.vendor_name) {
           acc[f.vendor_name] = (acc[f.vendor_name] || 0) + 1;
         }
         return acc;
       }, {});
 
-      const [topVendedor, topVendedorVentas] = Object.entries(
-        ventasPorVendedor
-      ).sort(([, a], [, b]) => b - a)[0] || ["N/A", 0];
+      const topVendedores = Object.entries(ventasPorVendedor)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 3)
+        .map(([name, ventas]) => ({ name, ventas }));
 
       const planesVendidos = affiliations.reduce((acc, f) => {
         if (f.status === "Aprobado" && f.plan) {
@@ -866,10 +866,11 @@ app.post(
         }
         return acc;
       }, {});
-      const [topPlan, topPlanVentas] = Object.entries(planesVendidos).sort(
-        ([, a], [, b]) => b - a
-      )[0] || ["N/A", 0];
 
+      const topPlanes = Object.entries(planesVendidos)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 3)
+        .map(([name, ventas]) => ({ name, ventas }));
       const ventasPorDia = affiliations.reduce((acc, f) => {
         if (f.status === "Aprobado") {
           const dia = new Date(f.fecha_creacion).toISOString().split("T")[0];
@@ -882,12 +883,10 @@ app.post(
         .map((f) => ({
           id: f.id,
           status: f.status,
-
           venta: {
             lat: f.latitud ? parseFloat(f.latitud) : null,
             lng: f.longitud ? parseFloat(f.longitud) : null,
           },
-
           domicilio: {
             lat: f.domicilio_latitud ? parseFloat(f.domicilio_latitud) : null,
             lng: f.domicilio_longitud ? parseFloat(f.domicilio_longitud) : null,
@@ -911,10 +910,10 @@ app.post(
           ventasTotales: ventasTotales,
           ticketPromedio:
             fichasAprobadas > 0 ? ventasTotales / fichasAprobadas : 0,
-          topVendedor: topVendedor,
-          topVendedorVentas,
-          topPlan,
-          topPlanVentas,
+
+          topVendedores: topVendedores,
+          topPlanes: topPlanes,
+
           ventasPorDia,
         },
         locations,
