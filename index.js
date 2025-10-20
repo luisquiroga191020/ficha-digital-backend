@@ -428,7 +428,13 @@ app.put(
     const { id } = req.params;
     const { formData, accion } = req.body;
 
-    const newStatus = accion === "finalizar" ? "Presentado" : "Abierto";
+    const newStatus = accion === "finalizar" ? "Presentado" : "ABIERTO";
+
+    const titular_nombre = `${formData.apellidoTitular || ""}, ${
+      formData.nombreTitular || ""
+    }`;
+    const titular_dni = formData.dniTitular || null;
+    const plan = formData.plan || null;
 
     try {
       const current = await pool.query(
@@ -438,15 +444,19 @@ app.put(
       if (current.rows.length === 0) {
         return res.status(404).json({ message: "Afiliación no encontrada." });
       }
-      if (current.rows[0].status !== "Abierto") {
-        return res.status(409).json({
-          message: "Esta ficha ya fue presentada y no puede ser modificada.",
-        });
+      if (current.rows[0].status !== "ABIERTO") {
+        return res
+          .status(409)
+          .json({
+            message: "Esta ficha ya fue presentada y no puede ser modificada.",
+          });
       }
 
       const updatedAffiliation = await pool.query(
-        "UPDATE affiliations SET form_data = $1, status = $2 WHERE id = $3 RETURNING *",
-        [formData, newStatus, id]
+        `UPDATE affiliations 
+         SET form_data = $1, status = $2, titular_nombre = $3, titular_dni = $4, plan = $5 
+         WHERE id = $6 RETURNING *`,
+        [formData, newStatus, titular_nombre, titular_dni, plan, id]
       );
 
       res.json(updatedAffiliation.rows[0]);
