@@ -374,7 +374,10 @@ app.post(
   authenticateToken,
   authorize(["VENDEDOR", "SUPERVISOR", "ADMINISTRADOR"]),
   async (req, res) => {
-    const { formData, latitud, longitud } = req.body;
+    const { formData, latitud, longitud, accion } = req.body;
+
+    const status = accion === "finalizar" ? "Presentado" : "Abierto";
+
     const { latitudDomicilio, longitudDomicilio } = formData;
     const userId = req.user.userId;
     const titular_nombre = `${formData.apellidoTitular || ""}, ${
@@ -386,8 +389,9 @@ app.post(
         `INSERT INTO affiliations (
             user_id, form_data, titular_nombre, titular_dni, plan, 
             latitud, longitud, 
-            domicilio_latitud, domicilio_longitud
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+            domicilio_latitud, domicilio_longitud,
+            status 
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
         [
           userId,
           formData,
@@ -398,6 +402,7 @@ app.post(
           longitud,
           latitudDomicilio,
           longitudDomicilio,
+          status,
         ]
       );
 
@@ -405,6 +410,46 @@ app.post(
     } catch (error) {
       console.error("Error al guardar la ficha:", error);
       res.status(500).json({ message: "Error al guardar la ficha." });
+    }
+  }
+);
+
+// ENDPOINT PARA EDITAR FICHAS
+app.put(
+  "/api/affiliations/:id",
+  authenticateToken,
+  authorize(["VENDEDOR", "SUPERVISOR", "ADMINISTRADOR"]),
+  async (req, res) => {
+    const { id } = req.params;
+    const { formData, accion } = req.body;
+
+    const newStatus = accion === "finalizar" ? "Presentado" : "Abierto";
+
+    try {
+      const current = await pool.query(
+        "SELECT status FROM affiliations WHERE id = $1",
+        [id]
+      );
+      if (current.rows.length === 0) {
+        return res.status(404).json({ message: "Afiliación no encontrada." });
+      }
+      if (current.rows[0].status !== "Abierto") {
+        return res
+          .status(409)
+          .json({
+            message: "Esta ficha ya fue presentada y no puede ser modificada.",
+          });
+      }
+
+      const updatedAffiliation = await pool.query(
+        "UPDATE affiliations SET form_data = $1, status = $2 WHERE id = $3 RETURNING *",
+        [formData, newStatus, id]
+      );
+
+      res.json(updatedAffiliation.rows[0]);
+    } catch (error) {
+      console.error("Error al actualizar la ficha:", error);
+      res.status(500).json({ message: "Error al actualizar la ficha." });
     }
   }
 );
