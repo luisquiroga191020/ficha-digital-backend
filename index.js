@@ -428,7 +428,7 @@ app.put(
     const { id } = req.params;
     const { formData, accion } = req.body;
 
-    const newStatus = accion === "finalizar" ? "Presentado" : "ABIERTO";
+    const newStatus = accion === "finalizar" ? "Presentado" : "Abierto";
 
     const titular_nombre = `${formData.apellidoTitular || ""}, ${
       formData.nombreTitular || ""
@@ -444,7 +444,7 @@ app.put(
       if (current.rows.length === 0) {
         return res.status(404).json({ message: "Afiliación no encontrada." });
       }
-      if (current.rows[0].status !== "ABIERTO") {
+      if (current.rows[0].status !== "Abierta") {
         return res
           .status(409)
           .json({
