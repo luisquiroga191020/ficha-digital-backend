@@ -100,6 +100,11 @@ const authorize = (allowedRoles) => {
 // 5. RUTAS (ENDPOINTS) DE LA API
 // -----------------------------------------------------------------------------
 
+// --- Salud ---
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
 // --- Autenticación ---
 app.post("/api/login", async (req, res) => {
   const { email, password } = req.body;
@@ -434,11 +439,9 @@ app.put(
         return res.status(404).json({ message: "Afiliación no encontrada." });
       }
       if (current.rows[0].status !== "Abierto") {
-        return res
-          .status(409)
-          .json({
-            message: "Esta ficha ya fue presentada y no puede ser modificada.",
-          });
+        return res.status(409).json({
+          message: "Esta ficha ya fue presentada y no puede ser modificada.",
+        });
       }
 
       const updatedAffiliation = await pool.query(
