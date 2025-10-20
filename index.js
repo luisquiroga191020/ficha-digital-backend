@@ -444,7 +444,7 @@ app.put(
       if (current.rows.length === 0) {
         return res.status(404).json({ message: "Afiliación no encontrada." });
       }
-      if (current.rows[0].status !== "Abierta") {
+      if (current.rows[0].status !== "Abierto") {
         return res
           .status(409)
           .json({
