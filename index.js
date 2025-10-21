@@ -1007,6 +1007,66 @@ app.post(
   }
 );
 
+
+// ENDPOINT PARA PERFORMANCE DE VENDEDORES
+
+app.post(
+  "/api/performance",
+  authenticateToken,
+  authorize(["VENDEDOR", "SUPERVISOR", "GERENTE", "ADMINISTRADOR"]), 
+  async (req, res) => {
+    const { startDate, endDate } = req.body;
+    const { userId, role } = req.user;
+
+    if (!startDate || !endDate) {
+      return res.status(400).json({ message: "Se requiere un rango de fechas." });
+    }
+
+    try {
+      const finalEndDate = new Date(endDate);
+      finalEndDate.setDate(finalEndDate.getDate() + 1);
+
+      let params = [startDate, finalEndDate];
+      let userFilterClause = "";
+
+      if (role === 'VENDEDOR') {
+        userFilterClause = `AND u.id = $3`;
+        params.push(userId);
+      }
+
+      const performanceQuery = `
+        SELECT
+            u.id,
+            u.codigo,
+            u.full_name,
+            -- Contar solo las fichas aprobadas
+            COUNT(CASE WHEN a.status = 'Aprobado' THEN 1 ELSE NULL END) as total_fichas,
+            -- Sumar el 'total' solo de las fichas aprobadas, convirtiéndolo a número
+            COALESCE(SUM(CASE WHEN a.status = 'Aprobado' THEN CAST(a.form_data->>'total' AS NUMERIC) ELSE 0 END), 0) as total_venta
+        FROM
+            users u
+        LEFT JOIN
+            affiliations a ON u.id = a.user_id AND a.fecha_creacion >= $1 AND a.fecha_creacion < $2
+        WHERE
+            u.role = 'VENDEDOR' -- Solo nos interesan los usuarios que son vendedores
+            ${userFilterClause}
+        GROUP BY
+            u.id, u.codigo, u.full_name
+        ORDER BY
+            total_venta DESC;
+      `;
+
+      const result = await pool.query(performanceQuery, params);
+      
+      res.json(result.rows);
+
+    } catch (error) {
+      console.error("Error al obtener datos de performance:", error);
+      res.status(500).json({ message: "Error interno del servidor." });
+    }
+  }
+);
+
 // --- DATOS MAESTROS ---
 
 // Endpoints de lectura
