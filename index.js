@@ -376,7 +376,7 @@ app.delete(
 app.get(
   "/api/periodos",
   authenticateToken,
-  authorize(["ADMINISTRADOR"]),
+  authorize(["VENDEDOR", "SUPERVISOR", "GERENTE", "ADMINISTRADOR"]),
   async (req, res) => {
     try {
       const result = await pool.query(
