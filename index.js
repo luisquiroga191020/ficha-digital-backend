@@ -372,6 +372,91 @@ app.delete(
   }
 );
 
+// --- API para PERÍODOS ---
+app.get(
+  "/api/periodos",
+  authenticateToken,
+  authorize(["ADMINISTRADOR"]),
+  async (req, res) => {
+    try {
+      const result = await pool.query(
+        "SELECT * FROM periodos ORDER BY fecha_inicio DESC"
+      );
+      res.json(result.rows);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener períodos." });
+    }
+  }
+);
+
+app.post(
+  "/api/periodos",
+  authenticateToken,
+  authorize(["ADMINISTRADOR"]),
+  async (req, res) => {
+    const { nombre, fecha_inicio, fecha_fin, dias_habiles } = req.body;
+    try {
+      const result = await pool.query(
+        "INSERT INTO periodos (nombre, fecha_inicio, fecha_fin, dias_habiles) VALUES ($1, $2, $3, $4) RETURNING *",
+        [nombre, fecha_inicio, fecha_fin, dias_habiles]
+      );
+      res.status(201).json(result.rows[0]);
+    } catch (error) {
+      res.status(500).json({ message: "Error al crear el período." });
+    }
+  }
+);
+
+// --- API para OBJETIVOS ---
+app.get(
+  "/api/objetivos",
+  authenticateToken,
+  authorize(["ADMINISTRADOR"]),
+  async (req, res) => {
+    const { periodo_id } = req.query;
+    if (!periodo_id)
+      return res.status(400).json({ message: "Se requiere un ID de período." });
+    try {
+      const result = await pool.query(
+        `SELECT 
+        u.id as vendedor_id, 
+        u.full_name, 
+        u.codigo, 
+        o.objetivo_monto 
+       FROM users u
+       LEFT JOIN objetivos_vendedores o ON u.id = o.vendedor_id AND o.periodo_id = $1
+       WHERE u.role = 'VENDEDOR' ORDER BY u.full_name`,
+        [periodo_id]
+      );
+      res.json(result.rows);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener objetivos." });
+    }
+  }
+);
+
+app.post(
+  "/api/objetivos",
+  authenticateToken,
+  authorize(["ADMINISTRADOR"]),
+  async (req, res) => {
+    const { periodo_id, vendedor_id, objetivo_monto } = req.body;
+    try {
+      const result = await pool.query(
+        `INSERT INTO objetivos_vendedores (periodo_id, vendedor_id, objetivo_monto)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (periodo_id, vendedor_id) 
+       DO UPDATE SET objetivo_monto = EXCLUDED.objetivo_monto
+       RETURNING *`,
+        [periodo_id, vendedor_id, objetivo_monto]
+      );
+      res.status(201).json(result.rows[0]);
+    } catch (error) {
+      res.status(500).json({ message: "Error al guardar el objetivo." });
+    }
+  }
+);
+
 // --- GESTIÓN DE AFILIACIONES ---
 
 app.post(
@@ -450,20 +535,15 @@ app.put(
       const currentAffiliation = currentResult.rows[0];
 
       if (currentAffiliation.status !== "Abierto") {
-        return res
-          .status(409)
-          .json({
-            message: "Esta ficha ya fue presentada y no puede ser modificada.",
-          });
+        return res.status(409).json({
+          message: "Esta ficha ya fue presentada y no puede ser modificada.",
+        });
       }
 
       if (currentAffiliation.user_id !== userId) {
-        return res
-          .status(403)
-          .json({
-            message:
-              "Acceso denegado: No tienes permiso para editar esta ficha.",
-          });
+        return res.status(403).json({
+          message: "Acceso denegado: No tienes permiso para editar esta ficha.",
+        });
       }
 
       const updatedAffiliation = await pool.query(
@@ -1007,30 +1087,37 @@ app.post(
   }
 );
 
-
 // ENDPOINT PARA PERFORMANCE DE VENDEDORES
-
 app.post(
   "/api/performance",
   authenticateToken,
-  authorize(["VENDEDOR", "SUPERVISOR", "GERENTE", "ADMINISTRADOR"]), 
+  authorize(["VENDEDOR", "SUPERVISOR", "GERENTE", "ADMINISTRADOR"]),
   async (req, res) => {
-    const { startDate, endDate } = req.body;
+    const { periodo_id } = req.body;
     const { userId, role } = req.user;
 
-    if (!startDate || !endDate) {
-      return res.status(400).json({ message: "Se requiere un rango de fechas." });
+    if (!periodo_id) {
+      return res.status(400).json({ message: "Se requiere un período." });
     }
 
     try {
-      const finalEndDate = new Date(endDate);
+      const periodoResult = await pool.query(
+        "SELECT fecha_inicio, fecha_fin FROM periodos WHERE id = $1",
+        [periodo_id]
+      );
+      if (periodoResult.rows.length === 0) {
+        return res.status(404).json({ message: "Período no encontrado." });
+      }
+      const { fecha_inicio, fecha_fin } = periodoResult.rows[0];
+
+      const finalEndDate = new Date(fecha_fin);
       finalEndDate.setDate(finalEndDate.getDate() + 1);
 
-      let params = [startDate, finalEndDate];
+      let params = [fecha_inicio, finalEndDate, periodo_id];
       let userFilterClause = "";
 
-      if (role === 'VENDEDOR') {
-        userFilterClause = `AND u.id = $3`;
+      if (role === "VENDEDOR") {
+        userFilterClause = `AND u.id = $4`;
         params.push(userId);
       }
 
@@ -1039,16 +1126,16 @@ app.post(
             u.id,
             u.codigo,
             u.full_name,
-            -- Contar solo las fichas aprobadas
             COUNT(CASE WHEN a.status = 'Aprobado' THEN 1 ELSE NULL END) as total_fichas,
-            -- Sumar el 'total' solo de las fichas aprobadas, convirtiéndolo a número
-            COALESCE(SUM(CASE WHEN a.status = 'Aprobado' THEN CAST(a.form_data->>'total' AS NUMERIC) ELSE 0 END), 0) as total_venta
+            COALESCE(SUM(CASE WHEN a.status = 'Aprobado' THEN CAST(a.form_data->>'total' AS NUMERIC) ELSE 0 END), 0) as total_venta,
+            -- Obtenemos el objetivo directamente con un subquery
+            (SELECT objetivo_monto FROM objetivos_vendedores ov WHERE ov.vendedor_id = u.id AND ov.periodo_id = $3) as objetivo_monto
         FROM
             users u
         LEFT JOIN
             affiliations a ON u.id = a.user_id AND a.fecha_creacion >= $1 AND a.fecha_creacion < $2
         WHERE
-            u.role = 'VENDEDOR' -- Solo nos interesan los usuarios que son vendedores
+            u.role = 'VENDEDOR'
             ${userFilterClause}
         GROUP BY
             u.id, u.codigo, u.full_name
@@ -1057,9 +1144,23 @@ app.post(
       `;
 
       const result = await pool.query(performanceQuery, params);
-      
-      res.json(result.rows);
 
+      const performanceData = result.rows.map((row) => {
+        const objetivo = parseFloat(row.objetivo_monto) || 0;
+        const venta = parseFloat(row.total_venta);
+
+        const avance_porcentaje =
+          objetivo > 0 ? ((venta / objetivo) * 100).toFixed(1) : 0;
+        const monto_faltante = Math.max(0, objetivo - venta);
+
+        return {
+          ...row,
+          avance_porcentaje: `${avance_porcentaje}%`,
+          monto_faltante: monto_faltante,
+        };
+      });
+
+      res.json(performanceData);
     } catch (error) {
       console.error("Error al obtener datos de performance:", error);
       res.status(500).json({ message: "Error interno del servidor." });
