@@ -429,7 +429,7 @@ app.put(
     const { formData, accion } = req.body;
     const { userId } = req.user;
 
-    const newStatus = accion === "finalizar" ? "Presentado" : "ABIERTO";
+    const newStatus = accion === "finalizar" ? "Presentado" : "Abierto";
 
     const titular_nombre = `${formData.apellidoTitular || ""}, ${
       formData.nombreTitular || ""
@@ -449,7 +449,7 @@ app.put(
 
       const currentAffiliation = currentResult.rows[0];
 
-      if (currentAffiliation.status !== "ABIERTO") {
+      if (currentAffiliation.status !== "Abierto") {
         return res
           .status(409)
           .json({
