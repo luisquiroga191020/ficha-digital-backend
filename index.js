@@ -427,8 +427,9 @@ app.put(
   async (req, res) => {
     const { id } = req.params;
     const { formData, accion } = req.body;
+    const { userId } = req.user;
 
-    const newStatus = accion === "finalizar" ? "Presentado" : "Abierto";
+    const newStatus = accion === "finalizar" ? "Presentado" : "ABIERTO";
 
     const titular_nombre = `${formData.apellidoTitular || ""}, ${
       formData.nombreTitular || ""
@@ -437,18 +438,31 @@ app.put(
     const plan = formData.plan || null;
 
     try {
-      const current = await pool.query(
-        "SELECT status FROM affiliations WHERE id = $1",
+      const currentResult = await pool.query(
+        "SELECT status, user_id FROM affiliations WHERE id = $1",
         [id]
       );
-      if (current.rows.length === 0) {
+
+      if (currentResult.rows.length === 0) {
         return res.status(404).json({ message: "Afiliación no encontrada." });
       }
-      if (current.rows[0].status !== "Abierto") {
+
+      const currentAffiliation = currentResult.rows[0];
+
+      if (currentAffiliation.status !== "ABIERTO") {
         return res
           .status(409)
           .json({
             message: "Esta ficha ya fue presentada y no puede ser modificada.",
+          });
+      }
+
+      if (currentAffiliation.user_id !== userId) {
+        return res
+          .status(403)
+          .json({
+            message:
+              "Acceso denegado: No tienes permiso para editar esta ficha.",
           });
       }
 
