@@ -726,7 +726,7 @@ app.get("/api/affiliations/:id", authenticateToken, async (req, res) => {
   }
 });
 
-// REEMPLAZA EL ENDPOINT COMPLETO
+
 app.put(
   "/api/affiliations/:id/status",
   authenticateToken,
@@ -739,46 +739,49 @@ app.put(
     if (!["Aprobado", "Rechazado", "Observado"].includes(newStatus)) {
       return res.status(400).json({ message: "Estado no válido." });
     }
-
     if ((newStatus === "Rechazado" || newStatus === "Observado") && (!motivo || motivo.trim() === "")) {
       return res.status(400).json({ message: "El motivo es obligatorio para esta acción." });
     }
     
     const finalDbStatus = (newStatus === 'Observado') ? 'Abierto' : newStatus;
     
-    try {
-      const current = await pool.query("SELECT status FROM affiliations WHERE id = $1", [id]);
-      if (current.rows.length === 0) {
+try {
+    const current = await pool.query("SELECT status FROM affiliations WHERE id = $1", [id]);
+    
+    if (current.rows.length === 0) {
         return res.status(404).json({ message: "Afiliación no encontrada." });
-      }
-      if (current.rows[0].status !== "Presentado") {
-        return res.status(409).json({ message: `Esta afiliación ya está en estado '${current.rows[0].status}' y no se puede cambiar.` });
-      }
+    }
+    
+    if (current.rows[0].status !== "Presentado") {
+        return res.status(409).json({
+            message: `Esta afiliación ya está en estado '${current.rows[0].status}' y no se puede cambiar.`,
+        });
+    }
 
-      const result = await pool.query(
+    const result = await pool.query(
         `UPDATE affiliations 
          SET 
             status = $1, 
             status_change_user_id = $2, 
             status_change_timestamp = NOW(), 
-            -- Guardamos el motivo en la columna correcta según la acción
             rechazo_motivo = CASE WHEN $4 = 'Rechazado' THEN $5 ELSE rechazo_motivo END,
             observacion_motivo = CASE WHEN $4 = 'Observado' THEN $5 ELSE observacion_motivo END
-         WHERE id = $6 
+         WHERE id = $3 
          RETURNING status, status_change_timestamp, rechazo_motivo, observacion_motivo`,
-        [finalDbStatus, changingUserId, id, newStatus, motivo, id]
-      );
+        [finalDbStatus, changingUserId, id, newStatus, motivo] 
+    );
 
-      res.json({
+    res.json({
         newStatus: result.rows[0].status,
         timestamp: result.rows[0].status_change_timestamp,
         rechazoMotivo: result.rows[0].rechazo_motivo,
         observacionMotivo: result.rows[0].observacion_motivo
-      });
-    } catch (error) {
-      console.error("Error al actualizar estado:", error);
-      res.status(500).json({ message: "Error interno del servidor." });
-    }
+    });
+    
+} catch (error) {
+    console.error("Error al actualizar estado:", error);
+    res.status(500).json({ message: "Error interno del servidor." });
+}
   }
 );
 
