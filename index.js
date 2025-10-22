@@ -616,6 +616,7 @@ app.get("/api/affiliations", authenticateToken, async (req, res) => {
     const query = `
       SELECT
         a.id, a.titular_nombre, a.titular_dni, a.plan, a.status, a.fecha_creacion,
+        a.observacion_motivo,
         a.form_data ->> 'total' as total,
         u.full_name as vendor_name
       FROM affiliations a
@@ -646,6 +647,7 @@ app.get("/api/affiliations/:id", authenticateToken, async (req, res) => {
     let query = `
           SELECT 
               a.*, 
+              a.observacion_motivo,
               creator.full_name as creator_user_name,
               creator.codigo as creator_user_codigo,
               status_changer.full_name as status_change_user_name 
@@ -712,6 +714,7 @@ app.get("/api/affiliations/:id", authenticateToken, async (req, res) => {
       statusChangeTimestamp: dbRow.status_change_timestamp,
       statusChangeUserName: dbRow.status_change_user_name,
       rechazoMotivo: dbRow.rechazo_motivo,
+      observacionMotivo: dbRow.observacion_motivo,
       creatorUserName: dbRow.creator_user_name,
       creatorUserCodigo: dbRow.creator_user_codigo,
 
