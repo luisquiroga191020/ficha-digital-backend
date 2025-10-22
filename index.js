@@ -514,8 +514,6 @@ app.put(
     const { formData, accion } = req.body;
     const { userId } = req.user;
 
-    const newStatus = accion === "finalizar" ? "Presentado" : "Abierto";
-
     const titular_nombre = `${formData.apellidoTitular || ""}, ${
       formData.nombreTitular || ""
     }`;
@@ -534,10 +532,8 @@ app.put(
 
       const currentAffiliation = currentResult.rows[0];
 
-      if (currentAffiliation.status !== "Abierto") {
-        return res.status(409).json({
-          message: "Esta ficha ya fue presentada y no puede ser modificada.",
-        });
+      if (!['Abierto', 'Observado'].includes(currentAffiliation.status)) {
+        return res.status(409).json({ message: "Esta ficha ya fue presentada y no puede ser modificada." });
       }
 
       if (currentAffiliation.user_id !== userId) {
@@ -546,6 +542,15 @@ app.put(
         });
       }
 
+      let newStatus;
+      if (accion === 'finalizar') {
+        newStatus = 'Presentado';
+      } else if (accion === 'guardar') {
+        newStatus = (currentAffiliation.status === 'Observado') ? 'Observado' : 'Abierto';
+      } else {
+        newStatus = currentAffiliation.status;
+      }
+      
       const updatedAffiliation = await pool.query(
         `UPDATE affiliations 
          SET form_data = $1, status = $2, titular_nombre = $3, titular_dni = $4, plan = $5 
@@ -746,7 +751,7 @@ app.put(
       return res.status(400).json({ message: "El motivo es obligatorio para esta acción." });
     }
     
-    const finalDbStatus = (newStatus === 'Observado') ? 'Abierto' : newStatus;
+    const finalDbStatus = newStatus;
     
 try {
     const current = await pool.query("SELECT status FROM affiliations WHERE id = $1", [id]);
