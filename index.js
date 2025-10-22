@@ -292,11 +292,11 @@ app.get(
 app.get(
   "/api/users",
   authenticateToken,
-  authorize(["ADMINISTRADOR"]),
+  authorize(["SUPERVISOR", "GERENTE", "ADMINISTRADOR"]),
   async (req, res) => {
     try {
       const result = await pool.query(
-        "SELECT id, full_name, email, codigo, role FROM users ORDER BY full_name"
+        "SELECT id, full_name FROM users WHERE role = 'VENDEDOR' ORDER BY full_name"
       );
       res.json(result.rows);
     } catch (error) {
@@ -532,8 +532,12 @@ app.put(
 
       const currentAffiliation = currentResult.rows[0];
 
-      if (!['Abierto', 'Observado'].includes(currentAffiliation.status)) {
-        return res.status(409).json({ message: "Esta ficha ya fue presentada y no puede ser modificada." });
+      if (!["Abierto", "Observado"].includes(currentAffiliation.status)) {
+        return res
+          .status(409)
+          .json({
+            message: "Esta ficha ya fue presentada y no puede ser modificada.",
+          });
       }
 
       if (currentAffiliation.user_id !== userId) {
@@ -543,14 +547,15 @@ app.put(
       }
 
       let newStatus;
-      if (accion === 'finalizar') {
-        newStatus = 'Presentado';
-      } else if (accion === 'guardar') {
-        newStatus = (currentAffiliation.status === 'Observado') ? 'Observado' : 'Abierto';
+      if (accion === "finalizar") {
+        newStatus = "Presentado";
+      } else if (accion === "guardar") {
+        newStatus =
+          currentAffiliation.status === "Observado" ? "Observado" : "Abierto";
       } else {
         newStatus = currentAffiliation.status;
       }
-      
+
       const updatedAffiliation = await pool.query(
         `UPDATE affiliations 
          SET form_data = $1, status = $2, titular_nombre = $3, titular_dni = $4, plan = $5 
@@ -734,7 +739,6 @@ app.get("/api/affiliations/:id", authenticateToken, async (req, res) => {
   }
 });
 
-
 app.put(
   "/api/affiliations/:id/status",
   authenticateToken,
@@ -747,26 +751,34 @@ app.put(
     if (!["Aprobado", "Rechazado", "Observado"].includes(newStatus)) {
       return res.status(400).json({ message: "Estado no válido." });
     }
-    if ((newStatus === "Rechazado" || newStatus === "Observado") && (!motivo || motivo.trim() === "")) {
-      return res.status(400).json({ message: "El motivo es obligatorio para esta acción." });
-    }
-    
-    const finalDbStatus = newStatus;
-    
-try {
-    const current = await pool.query("SELECT status FROM affiliations WHERE id = $1", [id]);
-    
-    if (current.rows.length === 0) {
-        return res.status(404).json({ message: "Afiliación no encontrada." });
-    }
-    
-    if (current.rows[0].status !== "Presentado") {
-        return res.status(409).json({
-            message: `Esta afiliación ya está en estado '${current.rows[0].status}' y no se puede cambiar.`,
-        });
+    if (
+      (newStatus === "Rechazado" || newStatus === "Observado") &&
+      (!motivo || motivo.trim() === "")
+    ) {
+      return res
+        .status(400)
+        .json({ message: "El motivo es obligatorio para esta acción." });
     }
 
-    const result = await pool.query(
+    const finalDbStatus = newStatus;
+
+    try {
+      const current = await pool.query(
+        "SELECT status FROM affiliations WHERE id = $1",
+        [id]
+      );
+
+      if (current.rows.length === 0) {
+        return res.status(404).json({ message: "Afiliación no encontrada." });
+      }
+
+      if (current.rows[0].status !== "Presentado") {
+        return res.status(409).json({
+          message: `Esta afiliación ya está en estado '${current.rows[0].status}' y no se puede cambiar.`,
+        });
+      }
+
+      const result = await pool.query(
         `UPDATE affiliations 
          SET 
             status = $1, 
@@ -776,20 +788,19 @@ try {
             observacion_motivo = CASE WHEN $4 = 'Observado' THEN $5 ELSE observacion_motivo END
          WHERE id = $3 
          RETURNING status, status_change_timestamp, rechazo_motivo, observacion_motivo`,
-        [finalDbStatus, changingUserId, id, newStatus, motivo] 
-    );
+        [finalDbStatus, changingUserId, id, newStatus, motivo]
+      );
 
-    res.json({
+      res.json({
         newStatus: result.rows[0].status,
         timestamp: result.rows[0].status_change_timestamp,
         rechazoMotivo: result.rows[0].rechazo_motivo,
-        observacionMotivo: result.rows[0].observacion_motivo
-    });
-    
-} catch (error) {
-    console.error("Error al actualizar estado:", error);
-    res.status(500).json({ message: "Error interno del servidor." });
-}
+        observacionMotivo: result.rows[0].observacion_motivo,
+      });
+    } catch (error) {
+      console.error("Error al actualizar estado:", error);
+      res.status(500).json({ message: "Error interno del servidor." });
+    }
   }
 );
 
