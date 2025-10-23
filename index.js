@@ -374,7 +374,7 @@ app.delete(
 
 // Endpoint para selector de usuarios
 app.get(
-  "/api/vendedores", 
+  "/api/vendedores",
   authenticateToken,
   authorize(["ADMINISTRADOR", "GERENTE", "SUPERVISOR", "AUDITOR"]),
   async (req, res) => {
@@ -384,11 +384,12 @@ app.get(
       );
       res.json(result.rows);
     } catch (error) {
-      res.status(500).json({ message: "Error al obtener la lista de vendedores." });
+      res
+        .status(500)
+        .json({ message: "Error al obtener la lista de vendedores." });
     }
   }
 );
-
 
 // --- API para PERÍODOS ---
 app.get(
@@ -602,7 +603,24 @@ app.get(
       if (result.rows.length === 0) {
         return res.status(404).json({ message: "Solicitud no encontrada." });
       }
-      res.json(result.rows[0]);
+      const fotosResult = await pool.query(
+        "SELECT id, public_id, descripcion, fecha_subida FROM reintegro_fotos WHERE reintegro_id = $1 ORDER BY fecha_subida DESC",
+        [id]
+      );
+
+      const fotosConUrlSegura = fotosResult.rows.map((foto) => {
+        const urlFirmada = cloudinary.url(foto.public_id, {
+          type: "authenticated",
+          sign_url: true,
+          expires_at: Math.floor(Date.now() / 1000) + 3600,
+        });
+        return { ...foto, url_segura: urlFirmada };
+      });
+      const reintegroDetails = {
+        ...result.rows[0],
+        fotos: fotosConUrlSegura,
+      };
+      res.json(reintegroDetails);
     } catch (error) {
       console.error("Error al obtener el detalle del reintegro:", error);
       res
@@ -676,11 +694,9 @@ app.put(
         [id]
       );
       if (current.rows[0].estado !== "Autorizado") {
-        return res
-          .status(409)
-          .json({
-            message: "Esta solicitud no está autorizada para ser abonada.",
-          });
+        return res.status(409).json({
+          message: "Esta solicitud no está autorizada para ser abonada.",
+        });
       }
 
       const result = await pool.query(
@@ -698,6 +714,56 @@ app.put(
     }
   }
 );
+
+// --- ENDPOINT PARA SUBIR FOTOS A UNA SOLICITUD DE REINTEGRO ---
+app.post(
+  "/api/reintegros/:id/fotos",
+  authenticateToken,
+  authorize(["ADMINISTRADOR", "GERENTE", "AUDITOR"]), // Roles que pueden crear reintegros
+  upload.single("foto"),
+  async (req, res) => {
+    const { id } = req.params;
+    const { descripcion } = req.body;
+
+    if (!req.file) {
+      return res
+        .status(400)
+        .json({ message: "No se ha subido ningún archivo." });
+    }
+
+    try {
+      // Subida a Cloudinary
+      const uploadResult = await new Promise((resolve, reject) => {
+        const uploadStream = cloudinary.uploader.upload_stream(
+          {
+            folder: `reintegros/${id}`, // Carpeta específica para reintegros
+            public_id: `${Date.now()}`,
+            type: "authenticated", // Mantenemos la seguridad
+          },
+          (error, result) => {
+            if (error) return reject(error);
+            resolve(result);
+          }
+        );
+        uploadStream.end(req.file.buffer);
+      });
+
+      const { public_id } = uploadResult;
+
+      // Guardar en la nueva tabla 'reintegro_fotos'
+      const newFoto = await pool.query(
+        "INSERT INTO reintegro_fotos (reintegro_id, public_id, descripcion) VALUES ($1, $2, $3) RETURNING *",
+        [id, public_id, descripcion]
+      );
+
+      res.status(201).json(newFoto.rows[0]);
+    } catch (error) {
+      console.error("Error al subir la foto del reintegro:", error);
+      res.status(500).json({ message: "Error interno al subir la foto." });
+    }
+  }
+);
+
 // ==========================================================
 
 // --- GESTIÓN DE AFILIACIONES ---
