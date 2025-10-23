@@ -457,6 +457,193 @@ app.post(
   }
 );
 
+
+
+// ==========================================================
+// ===== GESTIÓN DE REINTEGROS =====
+// ==========================================================
+
+// --- 1. CREAR UNA NUEVA SOLICITUD DE REINTEGRO ---
+app.post(
+  "/api/reintegros",
+  authenticateToken,
+  authorize(["ADMINISTRADOR", "GERENTE", "AUDITOR"]),
+  async (req, res) => {
+    const {
+      solicitud_id,
+      tipo_solicitud,
+      certificado_nro,
+      codigo_afiliado,
+      monto_realizado,
+      monto_correcto,
+      observacion
+    } = req.body;
+    
+    const solicitado_por_id = req.user.userId;
+
+    // Validación básica
+    if (!solicitud_id || !tipo_solicitud || monto_realizado == null || monto_correcto == null) {
+      return res.status(400).json({ message: "Faltan campos obligatorios." });
+    }
+
+    // Cálculo del reintegro
+    const monto_reintegro = parseFloat(monto_correcto) - parseFloat(monto_realizado);
+
+    try {
+      const result = await pool.query(
+        `INSERT INTO reintegros (solicitud_id, tipo_solicitud, certificado_nro, codigo_afiliado, monto_realizado, monto_correcto, monto_reintegro, solicitado_por_id, observacion)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+        [solicitud_id, tipo_solicitud, certificado_nro, codigo_afiliado, monto_realizado, monto_correcto, monto_reintegro, solicitado_por_id, observacion]
+      );
+      res.status(201).json(result.rows[0]);
+    } catch (error) {
+      console.error("Error al crear la solicitud de reintegro:", error);
+      res.status(500).json({ message: "Error al crear la solicitud de reintegro." });
+    }
+  }
+);
+
+// --- 2. LISTAR TODAS LAS SOLICITUDES DE REINTEGRO ---
+app.get(
+  "/api/reintegros",
+  authenticateToken,
+  authorize(["ADMINISTRADOR", "GERENTE", "AUDITOR", "TESORERIA"]),
+  async (req, res) => {
+    try {
+      const result = await pool.query(`
+        SELECT 
+          r.id,
+          r.tipo_solicitud,
+          r.certificado_nro,
+          r.codigo_afiliado,
+          r.monto_realizado,
+          r.monto_correcto,
+          r.monto_reintegro,
+          r.estado,
+          solicitante.full_name as solicitado_por_nombre,
+          auditor.full_name as auditado_por_nombre,
+          tesorero.full_name as abonado_por_nombre
+        FROM reintegros r
+        LEFT JOIN users solicitante ON r.solicitado_por_id = solicitante.id
+        LEFT JOIN users auditor ON r.auditado_por_id = auditor.id
+        LEFT JOIN users tesorero ON r.abonado_por_id = tesorero.id
+        ORDER BY r.solicitado_en DESC
+      `);
+      res.json(result.rows);
+    } catch (error) {
+      console.error("Error al obtener las solicitudes de reintegro:", error);
+      res.status(500).json({ message: "Error al obtener las solicitudes de reintegro." });
+    }
+  }
+);
+
+// --- 3. VER EL DETALLE DE UNA SOLICITUD ---
+app.get(
+  "/api/reintegros/:id",
+  authenticateToken,
+  authorize(["ADMINISTRADOR", "GERENTE", "AUDITOR", "TESORERIA"]),
+  async (req, res) => {
+    const { id } = req.params;
+    try {
+      const result = await pool.query(`
+        SELECT 
+          r.*,
+          solicitante.full_name as solicitado_por_nombre,
+          auditor.full_name as auditado_por_nombre,
+          tesorero.full_name as abonado_por_nombre
+        FROM reintegros r
+        LEFT JOIN users solicitante ON r.solicitado_por_id = solicitante.id
+        LEFT JOIN users auditor ON r.auditado_por_id = auditor.id
+        LEFT JOIN users tesorero ON r.abonado_por_id = tesorero.id
+        WHERE r.id = $1
+      `, [id]);
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ message: "Solicitud no encontrada." });
+      }
+      res.json(result.rows[0]);
+    } catch (error) {
+      console.error("Error al obtener el detalle del reintegro:", error);
+      res.status(500).json({ message: "Error al obtener el detalle del reintegro." });
+    }
+  }
+);
+
+// --- 4. AUDITAR UNA SOLICITUD (Autorizar/Rechazar) ---
+app.put(
+  "/api/reintegros/:id/auditar",
+  authenticateToken,
+  authorize(["AUDITOR"]),
+  async (req, res) => {
+    const { id } = req.params;
+    const { nuevo_estado, motivo_rechazo } = req.body;
+    const auditado_por_id = req.user.userId;
+
+    if (!['Autorizado', 'Rechazado'].includes(nuevo_estado)) {
+      return res.status(400).json({ message: "Estado de auditoría no válido." });
+    }
+    if (nuevo_estado === 'Rechazado' && !motivo_rechazo) {
+      return res.status(400).json({ message: "El motivo del rechazo es obligatorio." });
+    }
+
+    try {
+      const current = await pool.query("SELECT estado FROM reintegros WHERE id = $1", [id]);
+      if (current.rows[0].estado !== 'Solicitado') {
+        return res.status(409).json({ message: "Esta solicitud ya ha sido auditada." });
+      }
+
+      const result = await pool.query(
+        `UPDATE reintegros SET 
+          estado = $1, 
+          auditado_por_id = $2, 
+          auditado_en = NOW(), 
+          motivo_rechazo = $3
+         WHERE id = $4 RETURNING *`,
+        [nuevo_estado, auditado_por_id, motivo_rechazo, id]
+      );
+      res.json(result.rows[0]);
+    } catch (error) {
+      console.error("Error al auditar la solicitud:", error);
+      res.status(500).json({ message: "Error al auditar la solicitud." });
+    }
+  }
+);
+
+// --- 5. MARCAR UNA SOLICITUD COMO ABONADA ---
+app.put(
+  "/api/reintegros/:id/abonar",
+  authenticateToken,
+  authorize(["TESORERIA"]),
+  async (req, res) => {
+    const { id } = req.params;
+    const abonado_por_id = req.user.userId;
+
+    try {
+      const current = await pool.query("SELECT estado FROM reintegros WHERE id = $1", [id]);
+      if (current.rows[0].estado !== 'Autorizado') {
+        return res.status(409).json({ message: "Esta solicitud no está autorizada para ser abonada." });
+      }
+
+      const result = await pool.query(
+        `UPDATE reintegros SET 
+          estado = 'Abonado', 
+          abonado_por_id = $1, 
+          abonado_en = NOW()
+         WHERE id = $2 RETURNING *`,
+        [abonado_por_id, id]
+      );
+      res.json(result.rows[0]);
+    } catch (error) {
+      console.error("Error al abonar la solicitud:", error);
+      res.status(500).json({ message: "Error al abonar la solicitud." });
+    }
+  }
+);
+// ==========================================================
+
+
+
+
 // --- GESTIÓN DE AFILIACIONES ---
 
 app.post(
