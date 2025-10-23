@@ -292,7 +292,7 @@ app.get(
 app.get(
   "/api/users",
   authenticateToken,
-  authorize(["SUPERVISOR", "GERENTE", "ADMINISTRADOR"]),
+  authorize(["SUPERVISOR", "GERENTE", "ADMINISTRADOR", "AUDITOR"]),
   async (req, res) => {
     try {
       const result = await pool.query(
