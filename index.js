@@ -457,8 +457,6 @@ app.post(
   }
 );
 
-
-
 // ==========================================================
 // ===== GESTIÓN DE REINTEGROS =====
 // ==========================================================
@@ -476,29 +474,49 @@ app.post(
       codigo_afiliado,
       monto_realizado,
       monto_correcto,
-      observacion
+      observacion,
+      vendedor_nombre,
     } = req.body;
-    
+
     const solicitado_por_id = req.user.userId;
 
     // Validación básica
-    if (!solicitud_id || !tipo_solicitud || monto_realizado == null || monto_correcto == null) {
+    if (
+      !solicitud_id ||
+      !tipo_solicitud ||
+      monto_realizado == null ||
+      monto_correcto == null
+    ) {
       return res.status(400).json({ message: "Faltan campos obligatorios." });
     }
 
     // Cálculo del reintegro
-    const monto_reintegro = parseFloat(monto_correcto) - parseFloat(monto_realizado);
+    const monto_reintegro =
+      parseFloat(monto_correcto) - parseFloat(monto_realizado);
 
     try {
       const result = await pool.query(
-        `INSERT INTO reintegros (solicitud_id, tipo_solicitud, certificado_nro, codigo_afiliado, monto_realizado, monto_correcto, monto_reintegro, solicitado_por_id, observacion)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-        [solicitud_id, tipo_solicitud, certificado_nro, codigo_afiliado, monto_realizado, monto_correcto, monto_reintegro, solicitado_por_id, observacion]
+        `INSERT INTO reintegros (solicitud_id, tipo_solicitud, certificado_nro, codigo_afiliado, monto_realizado, monto_correcto, monto_reintegro, solicitado_por_id, observacion, vendedor_nombre)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+        [
+          solicitud_id,
+          tipo_solicitud,
+          certificado_nro,
+          codigo_afiliado,
+          monto_realizado,
+          monto_correcto,
+          monto_reintegro,
+          solicitado_por_id,
+          observacion,
+          vendedor_nombre,
+        ]
       );
       res.status(201).json(result.rows[0]);
     } catch (error) {
       console.error("Error al crear la solicitud de reintegro:", error);
-      res.status(500).json({ message: "Error al crear la solicitud de reintegro." });
+      res
+        .status(500)
+        .json({ message: "Error al crear la solicitud de reintegro." });
     }
   }
 );
@@ -532,7 +550,9 @@ app.get(
       res.json(result.rows);
     } catch (error) {
       console.error("Error al obtener las solicitudes de reintegro:", error);
-      res.status(500).json({ message: "Error al obtener las solicitudes de reintegro." });
+      res
+        .status(500)
+        .json({ message: "Error al obtener las solicitudes de reintegro." });
     }
   }
 );
@@ -545,7 +565,8 @@ app.get(
   async (req, res) => {
     const { id } = req.params;
     try {
-      const result = await pool.query(`
+      const result = await pool.query(
+        `
         SELECT 
           r.*,
           solicitante.full_name as solicitado_por_nombre,
@@ -556,7 +577,9 @@ app.get(
         LEFT JOIN users auditor ON r.auditado_por_id = auditor.id
         LEFT JOIN users tesorero ON r.abonado_por_id = tesorero.id
         WHERE r.id = $1
-      `, [id]);
+      `,
+        [id]
+      );
 
       if (result.rows.length === 0) {
         return res.status(404).json({ message: "Solicitud no encontrada." });
@@ -564,7 +587,9 @@ app.get(
       res.json(result.rows[0]);
     } catch (error) {
       console.error("Error al obtener el detalle del reintegro:", error);
-      res.status(500).json({ message: "Error al obtener el detalle del reintegro." });
+      res
+        .status(500)
+        .json({ message: "Error al obtener el detalle del reintegro." });
     }
   }
 );
@@ -579,17 +604,26 @@ app.put(
     const { nuevo_estado, motivo_rechazo } = req.body;
     const auditado_por_id = req.user.userId;
 
-    if (!['Autorizado', 'Rechazado'].includes(nuevo_estado)) {
-      return res.status(400).json({ message: "Estado de auditoría no válido." });
+    if (!["Autorizado", "Rechazado"].includes(nuevo_estado)) {
+      return res
+        .status(400)
+        .json({ message: "Estado de auditoría no válido." });
     }
-    if (nuevo_estado === 'Rechazado' && !motivo_rechazo) {
-      return res.status(400).json({ message: "El motivo del rechazo es obligatorio." });
+    if (nuevo_estado === "Rechazado" && !motivo_rechazo) {
+      return res
+        .status(400)
+        .json({ message: "El motivo del rechazo es obligatorio." });
     }
 
     try {
-      const current = await pool.query("SELECT estado FROM reintegros WHERE id = $1", [id]);
-      if (current.rows[0].estado !== 'Solicitado') {
-        return res.status(409).json({ message: "Esta solicitud ya ha sido auditada." });
+      const current = await pool.query(
+        "SELECT estado FROM reintegros WHERE id = $1",
+        [id]
+      );
+      if (current.rows[0].estado !== "Solicitado") {
+        return res
+          .status(409)
+          .json({ message: "Esta solicitud ya ha sido auditada." });
       }
 
       const result = await pool.query(
@@ -619,9 +653,16 @@ app.put(
     const abonado_por_id = req.user.userId;
 
     try {
-      const current = await pool.query("SELECT estado FROM reintegros WHERE id = $1", [id]);
-      if (current.rows[0].estado !== 'Autorizado') {
-        return res.status(409).json({ message: "Esta solicitud no está autorizada para ser abonada." });
+      const current = await pool.query(
+        "SELECT estado FROM reintegros WHERE id = $1",
+        [id]
+      );
+      if (current.rows[0].estado !== "Autorizado") {
+        return res
+          .status(409)
+          .json({
+            message: "Esta solicitud no está autorizada para ser abonada.",
+          });
       }
 
       const result = await pool.query(
@@ -640,9 +681,6 @@ app.put(
   }
 );
 // ==========================================================
-
-
-
 
 // --- GESTIÓN DE AFILIACIONES ---
 
@@ -720,11 +758,9 @@ app.put(
       const currentAffiliation = currentResult.rows[0];
 
       if (!["Abierto", "Observado"].includes(currentAffiliation.status)) {
-        return res
-          .status(409)
-          .json({
-            message: "Esta ficha ya fue presentada y no puede ser modificada.",
-          });
+        return res.status(409).json({
+          message: "Esta ficha ya fue presentada y no puede ser modificada.",
+        });
       }
 
       if (currentAffiliation.user_id !== userId) {
