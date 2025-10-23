@@ -292,11 +292,11 @@ app.get(
 app.get(
   "/api/users",
   authenticateToken,
-  authorize(["SUPERVISOR", "GERENTE", "ADMINISTRADOR", "AUDITOR"]),
+  authorize(["ADMINISTRADOR"]),
   async (req, res) => {
     try {
       const result = await pool.query(
-        "SELECT id, full_name FROM users WHERE role = 'VENDEDOR' ORDER BY full_name"
+        "SELECT id, full_name, email, codigo, role FROM users ORDER BY full_name"
       );
       res.json(result.rows);
     } catch (error) {
@@ -371,6 +371,24 @@ app.delete(
     }
   }
 );
+
+// Endpoint para selector de usuarios
+app.get(
+  "/api/vendedores", 
+  authenticateToken,
+  authorize(["ADMINISTRADOR", "GERENTE", "SUPERVISOR", "AUDITOR"]),
+  async (req, res) => {
+    try {
+      const result = await pool.query(
+        "SELECT id, full_name, codigo FROM users WHERE role = 'VENDEDOR' ORDER BY full_name"
+      );
+      res.json(result.rows);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener la lista de vendedores." });
+    }
+  }
+);
+
 
 // --- API para PERÍODOS ---
 app.get(
