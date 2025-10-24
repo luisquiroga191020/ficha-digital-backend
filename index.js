@@ -477,6 +477,201 @@ app.post(
 );
 
 // ==========================================================
+// ===== GESTIÓN DE CUENTAS CORRIENTES DE EMPRESAS =====
+// ==========================================================
+
+// --- 1. API PARA EL ABM DE ACUERDOS (Solo Admins) ---
+app.get(
+  "/api/acuerdos",
+  authenticateToken,
+  authorize(["ADMINISTRADOR"]),
+  async (req, res) => {
+    try {
+      const result = await pool.query(
+        "SELECT * FROM acuerdos_empresa ORDER BY nombre_empresa"
+      );
+      res.json(result.rows);
+    } catch (error) {
+      res.status(500).json({ message: "Error al obtener acuerdos." });
+    }
+  }
+);
+
+app.post(
+  "/api/acuerdos",
+  authenticateToken,
+  authorize(["ADMINISTRADOR"]),
+  async (req, res) => {
+    const { nombre_empresa, valor_cuota_mensual, dia_pago, modalidad_pago } =
+      req.body;
+    try {
+      const result = await pool.query(
+        "INSERT INTO acuerdos_empresa (nombre_empresa, valor_cuota_mensual, dia_pago, modalidad_pago) VALUES ($1, $2, $3, $4) RETURNING *",
+        [nombre_empresa, valor_cuota_mensual, dia_pago, modalidad_pago]
+      );
+      res.status(201).json(result.rows[0]);
+    } catch (error) {
+      res.status(500).json({ message: "Error al crear el acuerdo." });
+    }
+  }
+);
+
+// --- 2. API PARA REGISTRAR PAGOS ---
+app.post(
+  "/api/pagos-acuerdos",
+  authenticateToken,
+  authorize(["ADMINISTRADOR", "GERENTE", "SUPERVISOR"]),
+  async (req, res) => {
+    const {
+      acuerdo_id,
+      periodo_mes,
+      periodo_anio,
+      fecha_pago_efectivo,
+      monto_abonado,
+      observaciones,
+    } = req.body;
+    try {
+      const result = await pool.query(
+        `INSERT INTO pagos_acuerdos (acuerdo_id, periodo_mes, periodo_anio, fecha_pago_efectivo, monto_abonado, observaciones)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+        [
+          acuerdo_id,
+          periodo_mes,
+          periodo_anio,
+          fecha_pago_efectivo,
+          monto_abonado,
+          observaciones,
+        ]
+      );
+      res.status(201).json(result.rows[0]);
+    } catch (error) {
+      if (error.code === "23505") {
+        // Error de clave única duplicada
+        return res
+          .status(409)
+          .json({
+            message:
+              "Ya existe un pago registrado para este acuerdo en este período.",
+          });
+      }
+      res.status(500).json({ message: "Error al registrar el pago." });
+    }
+  }
+);
+
+// --- 3. ENDPOINT PRINCIPAL PARA EL CALENDARIO DE PAGOS ---
+app.get(
+  "/api/estado-cuentas-corrientes",
+  authenticateToken,
+  authorize(["ADMINISTRADOR", "GERENTE", "SUPERVISOR"]),
+  async (req, res) => {
+    try {
+      // Consulta 1: Obtener todos los acuerdos activos
+      const acuerdosResult = await pool.query(
+        "SELECT * FROM acuerdos_empresa WHERE activo = true ORDER BY nombre_empresa"
+      );
+      const acuerdos = acuerdosResult.rows;
+
+      // Consulta 2: Obtener todos los pagos registrados
+      const pagosResult = await pool.query("SELECT * FROM pagos_acuerdos");
+      const pagos = pagosResult.rows;
+
+      const hoy = new Date();
+      const mesesAVisualizar = 12;
+      const meses = [];
+
+      // Generar la lista de los últimos 12 meses para la cabecera
+      for (let i = 0; i < mesesAVisualizar; i++) {
+        const fecha = new Date();
+        fecha.setMonth(hoy.getMonth() - i);
+        meses.unshift({
+          label: fecha.toLocaleString("es-AR", {
+            month: "short",
+            year: "2-digit",
+          }),
+          mes: fecha.getMonth() + 1,
+          anio: fecha.getFullYear(),
+        });
+      }
+
+      // Procesar los datos en Node.js
+      const acuerdosData = acuerdos.map((acuerdo) => {
+        const mesesData = meses.map((mesInfo) => {
+          const pago = pagos.find(
+            (p) =>
+              p.acuerdo_id === acuerdo.id &&
+              p.periodo_mes === mesInfo.mes &&
+              p.periodo_anio === mesInfo.anio
+          );
+
+          if (pago) {
+            return {
+              ...mesInfo,
+              estado: "Pagado",
+              monto: pago.monto_abonado,
+              fecha_pago: pago.fecha_pago_efectivo,
+            };
+          }
+
+          // Calcular fecha de vencimiento si no hay pago
+          let fechaVencimiento;
+          if (acuerdo.modalidad_pago === "Mes Vencido") {
+            fechaVencimiento = new Date(
+              mesInfo.anio,
+              mesInfo.mes,
+              acuerdo.dia_pago
+            ); // mes es 1-12, new Date() es 0-11
+          } else {
+            // Mes en Curso
+            fechaVencimiento = new Date(
+              mesInfo.anio,
+              mesInfo.mes - 1,
+              acuerdo.dia_pago
+            );
+          }
+
+          let estado = "Vigente";
+          if (hoy > fechaVencimiento) {
+            estado = "Vencido";
+          }
+
+          return {
+            ...mesInfo,
+            estado: estado,
+            monto: acuerdo.valor_cuota_mensual,
+          };
+        });
+        return { ...acuerdo, meses: mesesData };
+      });
+
+      // Calcular totales de deuda por mes
+      const totalesDeuda = meses.map((mesInfo) => {
+        const total = acuerdosData.reduce((sum, acuerdo) => {
+          const mesData = acuerdo.meses.find(
+            (m) => m.mes === mesInfo.mes && m.anio === mesInfo.anio
+          );
+          return (
+            sum + (mesData.estado === "Vencido" ? parseFloat(mesData.monto) : 0)
+          );
+        }, 0);
+        return { ...mesInfo, total };
+      });
+
+      res.json({
+        acuerdos: acuerdosData,
+        totales_deuda: totalesDeuda,
+        meses_header: meses.map((m) => m.label), // Enviamos solo los labels para la cabecera
+      });
+    } catch (error) {
+      console.error("Error al obtener estado de cuentas corrientes:", error);
+      res
+        .status(500)
+        .json({ message: "Error al obtener estado de cuentas corrientes." });
+    }
+  }
+);
+
+// ==========================================================
 // ===== GESTIÓN DE REINTEGROS =====
 // ==========================================================
 
