@@ -516,6 +516,31 @@ app.post(
   }
 );
 
+app.put(
+  "/api/acuerdos/:id",
+  authenticateToken,
+  authorize(["ADMINISTRADOR"]),
+  async (req, res) => {
+    const { id } = req.params;
+    const { nombre_empresa, valor_cuota_mensual, dia_pago, modalidad_pago } =
+      req.body;
+    try {
+      const result = await pool.query(
+        `UPDATE acuerdos_empresa 
+       SET nombre_empresa = $1, valor_cuota_mensual = $2, dia_pago = $3, modalidad_pago = $4 
+       WHERE id = $5 RETURNING *`,
+        [nombre_empresa, valor_cuota_mensual, dia_pago, modalidad_pago, id]
+      );
+      if (result.rows.length === 0) {
+        return res.status(404).json({ message: "Acuerdo no encontrado." });
+      }
+      res.json(result.rows[0]);
+    } catch (error) {
+      res.status(500).json({ message: "Error al actualizar el acuerdo." });
+    }
+  }
+);
+
 // --- 2. API PARA REGISTRAR PAGOS ---
 app.post(
   "/api/pagos-acuerdos",
@@ -547,12 +572,10 @@ app.post(
     } catch (error) {
       if (error.code === "23505") {
         // Error de clave única duplicada
-        return res
-          .status(409)
-          .json({
-            message:
-              "Ya existe un pago registrado para este acuerdo en este período.",
-          });
+        return res.status(409).json({
+          message:
+            "Ya existe un pago registrado para este acuerdo en este período.",
+        });
       }
       res.status(500).json({ message: "Error al registrar el pago." });
     }
