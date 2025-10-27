@@ -600,23 +600,33 @@ app.get(
       const pagos = pagosResult.rows;
 
       const hoy = new Date();
-      const mesesAVisualizar = 12;
+      const mesesPasados = 24;
+      const mesesFuturos = 3;
       const meses = [];
 
-      // Generar la lista de los últimos 12 meses para la cabecera
-      for (let i = 0; i < mesesAVisualizar; i++) {
-        const fecha = new Date();
-        fecha.setMonth(hoy.getMonth() - i);
-        meses.unshift({
-          label: fecha.toLocaleString("es-AR", {
-            month: "short",
-            year: "2-digit",
-          }),
+      // Generar los meses pasados y el actual
+      for (let i = mesesPasados; i >= 0; i--) {
+        const fecha = new Date(hoy.getFullYear(), hoy.getMonth() - i, 1);
+        meses.push({
+          label: fecha
+            .toLocaleString("es-AR", { month: "short", year: "2-digit" })
+            .toUpperCase(),
           mes: fecha.getMonth() + 1,
           anio: fecha.getFullYear(),
         });
       }
 
+      // Generar los meses futuros
+      for (let i = 1; i <= mesesFuturos; i++) {
+        const fecha = new Date(hoy.getFullYear(), hoy.getMonth() + i, 1);
+        meses.push({
+          label: fecha
+            .toLocaleString("es-AR", { month: "short", year: "2-digit" })
+            .toUpperCase(),
+          mes: fecha.getMonth() + 1,
+          anio: fecha.getFullYear(),
+        });
+      }
       // Procesar los datos en Node.js
       const acuerdosData = acuerdos.map((acuerdo) => {
         const mesesData = meses.map((mesInfo) => {
