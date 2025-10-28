@@ -1724,6 +1724,127 @@ app.post(
   }
 );
 
+// ENDPOINT PARA DETALLE DE PERFORMANCE DE VENDEDOR
+app.post(
+  "/api/performance/vendedor-detalle",
+  authenticateToken,
+  authorize(["SUPERVISOR", "GERENTE", "ADMINISTRADOR", "VENDEDOR"]),
+  async (req, res) => {
+    const { vendedorId, periodoIds } = req.body;
+    const { userId, role } = req.user;
+
+    if (role === "VENDEDOR" && vendedorId !== userId) {
+      return res
+        .status(403)
+        .json({
+          message: "Acceso denegado: Solo puedes ver tu propia performance.",
+        });
+    }
+    if (
+      !vendedorId ||
+      !periodoIds ||
+      !Array.isArray(periodoIds) ||
+      periodoIds.length === 0
+    ) {
+      return res
+        .status(400)
+        .json({
+          message: "Se requiere un ID de vendedor y al menos un ID de período.",
+        });
+    }
+
+    try {
+      const periodosResult = await pool.query(
+        `SELECT id, nombre, fecha_inicio, fecha_fin FROM periodos WHERE id = ANY($1::int[])`,
+        [periodoIds]
+      );
+      const periodos = periodosResult.rows;
+
+      const fichasQuery = `
+        SELECT 
+          CAST(form_data->>'total' AS NUMERIC) as total,
+          fecha_creacion,
+          -- Extraer el ID del período al que pertenece cada ficha
+          (SELECT id FROM periodos WHERE fecha_creacion >= fecha_inicio AND fecha_creacion < (fecha_fin + INTERVAL '1 day')) as periodo_id
+        FROM affiliations
+        WHERE user_id = $1 AND status = 'Aprobado'
+        AND EXISTS (
+          SELECT 1 FROM periodos WHERE id = ANY($2::int[]) AND fecha_creacion >= fecha_inicio AND fecha_creacion < (fecha_fin + INTERVAL '1 day')
+        )
+        ORDER BY fecha_creacion;
+      `;
+      const fichasResult = await pool.query(fichasQuery, [
+        vendedorId,
+        periodoIds,
+      ]);
+      const fichas = fichasResult.rows;
+
+      let responseData = {};
+
+      for (const periodo of periodos) {
+        const fichasDelPeriodo = fichas.filter(
+          (f) => f.periodo_id === periodo.id
+        );
+
+        const kpis = {
+          totalVenta: fichasDelPeriodo.reduce(
+            (sum, f) => sum + parseFloat(f.total),
+            0
+          ),
+          totalFichas: fichasDelPeriodo.length,
+          ticketPromedio:
+            fichasDelPeriodo.length > 0
+              ? fichasDelPeriodo.reduce(
+                  (sum, f) => sum + parseFloat(f.total),
+                  0
+                ) / fichasDelPeriodo.length
+              : 0,
+        };
+
+        const ventasPorDia = {};
+        const fichasPorDia = {};
+        for (
+          let d = new Date(periodo.fecha_inicio);
+          d <= periodo.fecha_fin;
+          d.setDate(d.getDate() + 1)
+        ) {
+          const dateString = d.toISOString().split("T")[0];
+          ventasPorDia[dateString] = 0;
+          fichasPorDia[dateString] = 0;
+        }
+        fichasDelPeriodo.forEach((f) => {
+          const dateString = new Date(f.fecha_creacion)
+            .toISOString()
+            .split("T")[0];
+          if (ventasPorDia[dateString] !== undefined) {
+            ventasPorDia[dateString] += parseFloat(f.total);
+            fichasPorDia[dateString] += 1;
+          }
+        });
+
+        const fichasPorDiaSemana = [0, 0, 0, 0, 0, 0, 0];
+        fichasDelPeriodo.forEach((f) => {
+          const dayOfWeek = new Date(f.fecha_creacion).getDay();
+          fichasPorDiaSemana[dayOfWeek] += 1;
+        });
+
+        responseData[`periodo_${periodo.id}`] = {
+          nombre: periodo.nombre,
+          kpis: kpis,
+          ventasPorDia: ventasPorDia,
+          fichasPorDia: fichasPorDia,
+          fichasPorDiaSemana: fichasPorDiaSemana,
+        };
+      }
+
+      res.json(responseData);
+    } catch (error) {
+      console.error("Error al obtener detalle de performance:", error);
+      res.status(500).json({ message: "Error interno del servidor." });
+    }
+  }
+);
+
 // --- DATOS MAESTROS ---
 
 // Endpoints de lectura
